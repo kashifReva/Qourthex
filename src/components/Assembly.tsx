@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import Reveal from "./Reveal";
+import StaticAssemblyDiagram from "./StaticAssemblyDiagram";
+
+const Assembly3DScene = dynamic(() => import("./Assembly3DScene"), { ssr: false });
 
 const STAGE_CARDS = [
   { n: "Stage 01", h: "Components scattered", p: "Hex glass panels, turf modules, and padel balls drift in the build space." },
@@ -12,31 +16,48 @@ const STAGE_CARDS = [
 
 export default function Assembly() {
   const scrollWrapRef = useRef<HTMLDivElement | null>(null);
+  const progressRef = useRef(0);
   const [stage, setStage] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const [enabled3D, setEnabled3D] = useState(false);
 
   useEffect(() => {
     const scrollWrap = scrollWrapRef.current;
     if (!scrollWrap) return;
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotionMQ = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setReduceMotion(reduceMotionMQ);
+    setEnabled3D(window.matchMedia("(min-width:901px)").matches);
+
     const isDesktop = () => window.matchMedia("(min-width:901px)").matches;
+    let lastStage = -1;
 
     function onAssemblyScroll() {
       if (!scrollWrap) return;
-      if (reduceMotion || !isDesktop()) {
-        setStage(3);
+      if (reduceMotionMQ || !isDesktop()) {
+        progressRef.current = 1;
+        if (lastStage !== 3) {
+          lastStage = 3;
+          setStage(3);
+        }
         return;
       }
       const rect = scrollWrap.getBoundingClientRect();
       const vh = window.innerHeight;
       const total = rect.height - vh;
+      let progress: number;
       if (total <= 0) {
-        setStage(3);
-        return;
+        progress = 1;
+      } else {
+        const scrolled = Math.min(Math.max(-rect.top, 0), total);
+        progress = scrolled / total;
       }
-      const scrolled = Math.min(Math.max(-rect.top, 0), total);
-      const progress = scrolled / total;
-      setStage(Math.min(3, Math.floor(progress * 4)));
+      progressRef.current = progress;
+      const newStage = Math.min(3, Math.floor(progress * 4));
+      if (newStage !== lastStage) {
+        lastStage = newStage;
+        setStage(newStage);
+      }
     }
 
     document.addEventListener("scroll", onAssemblyScroll, { passive: true });
@@ -72,50 +93,11 @@ export default function Assembly() {
         <div className="assembly-pin">
           <div className="wrap assembly-inner">
             <div className="assembly-visual" id="assemblyVisual" data-stage={stage}>
-              <svg
-                viewBox="0 0 400 300"
-                fill="none"
-                role="img"
-                aria-label="Diagram of a padel court assembling from steel posts, glass panels, net and turf"
-              >
-                <rect
-                  className="assembly-part p-turf"
-                  x="40"
-                  y="40"
-                  width="320"
-                  height="220"
-                  rx="4"
-                  fill="#D4FF00"
-                  fillOpacity="0.05"
-                  stroke="#D4FF00"
-                  strokeOpacity="0.35"
-                  strokeWidth="1.4"
-                />
-                <line
-                  className="assembly-part p-turf"
-                  x1="200"
-                  y1="40"
-                  x2="200"
-                  y2="260"
-                  stroke="#D4FF00"
-                  strokeOpacity="0.25"
-                  strokeWidth="1"
-                />
-
-                <rect className="assembly-part p-panel-l" x="40" y="40" width="10" height="220" fill="#D4FF00" fillOpacity="0.14" />
-                <rect className="assembly-part p-panel-r" x="350" y="40" width="10" height="220" fill="#D4FF00" fillOpacity="0.14" />
-
-                <circle className="assembly-part p-post-tl" cx="40" cy="40" r="7" fill="#D4FF00" />
-                <circle className="assembly-part p-post-tr" cx="360" cy="40" r="7" fill="#D4FF00" />
-                <circle className="assembly-part p-post-bl" cx="40" cy="260" r="7" fill="#D4FF00" />
-                <circle className="assembly-part p-post-br" cx="360" cy="260" r="7" fill="#D4FF00" />
-
-                <rect className="assembly-part p-net" x="196" y="90" width="8" height="120" fill="#D4FF00" fillOpacity="0.5" />
-
-                <circle className="assembly-part p-ball1" cx="130" cy="110" r="6" fill="#D4FF00" />
-                <circle className="assembly-part p-ball2" cx="260" cy="150" r="6" fill="#D4FF00" />
-                <circle className="assembly-part p-ball3" cx="180" cy="200" r="6" fill="#D4FF00" />
-              </svg>
+              {enabled3D ? (
+                <Assembly3DScene progressRef={progressRef} reduceMotion={reduceMotion} />
+              ) : (
+                <StaticAssemblyDiagram />
+              )}
             </div>
             <div className="assembly-copy">
               <div className="assembly-progress" id="assemblyDots">

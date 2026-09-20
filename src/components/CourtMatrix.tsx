@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Reveal from "./Reveal";
+import CourtIllustration from "./CourtIllustration";
 
 const COURTS = [
   {
@@ -87,11 +88,7 @@ export default function CourtMatrix() {
 
         <Reveal className="court-display" id="courtDisplay">
           <div className="court-visual">
-            <svg viewBox="0 0 200 150" fill="none">
-              <rect x="15" y="15" width="170" height="120" rx="2" stroke="#D4FF00" strokeOpacity="0.55" strokeWidth="1.4" />
-              <line x1="100" y1="15" x2="100" y2="135" stroke="#D4FF00" strokeOpacity="0.3" strokeWidth="1" />
-              <rect x="35" y="35" width="130" height="80" stroke="#D4FF00" strokeOpacity="0.2" strokeWidth="1" />
-            </svg>
+            <CourtIllustration variant={c.id as "panoramic" | "standard" | "portable"} />
             <div className="chip mono">{c.code} / SPEC SHEET</div>
             <div className="caption mono">Blue hour &middot; Doha &middot; {c.name}</div>
           </div>

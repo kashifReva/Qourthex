@@ -1,74 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 import { goTo } from "@/lib/scroll";
 import Reveal from "./Reveal";
 
+const Hero3DScene = dynamic(() => import("./Hero3DScene"), { ssr: false });
+
 export default function Hero() {
-  const hostRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return;
-
-    const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, "svg");
-    svg.setAttribute("viewBox", "0 0 1000 1000");
-    svg.style.width = "100%";
-    svg.style.height = "100%";
-    svg.style.position = "absolute";
-    svg.style.inset = "0";
-
-    for (let i = 0; i < 16; i++) {
-      const r = 30 + Math.random() * 90;
-      const cx = Math.random() * 1000;
-      const cy = Math.random() * 1000;
-      const poly = document.createElementNS(svgNS, "polygon");
-      const pts: string[] = [];
-      for (let a = 0; a < 6; a++) {
-        const ang = (Math.PI / 3) * a;
-        pts.push((cx + Math.cos(ang) * r).toFixed(1) + "," + (cy + Math.sin(ang) * r).toFixed(1));
-      }
-      poly.setAttribute("points", pts.join(" "));
-      poly.setAttribute("fill", "none");
-      poly.setAttribute("stroke", "#D4FF00");
-      poly.setAttribute("stroke-opacity", (0.08 + Math.random() * 0.22).toFixed(2));
-      poly.setAttribute("stroke-width", "1");
-      poly.style.animation =
-        "floatHex " + (6 + Math.random() * 8).toFixed(1) + "s ease-in-out " + (Math.random() * 4).toFixed(1) + "s infinite";
-      svg.appendChild(poly);
-    }
-    host.appendChild(svg);
-
-    const styleTag = document.createElement("style");
-    styleTag.textContent = "@keyframes floatHex{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}";
-    document.head.appendChild(styleTag);
-
-    return () => {
-      host.removeChild(svg);
-      document.head.removeChild(styleTag);
-    };
-  }, []);
-
   return (
     <section className="hero" id="home">
       <div className="hero-field hex-grid"></div>
-      <div className="hero-field" id="heroHexes" ref={hostRef}></div>
+      <div className="hero-field" id="heroHexes">
+        <Hero3DScene />
+      </div>
       <div className="hero-vignette"></div>
       <div className="hero-coord mono">25&deg;17&prime;N &middot; 51&deg;32&prime;E &mdash; Doha</div>
       <div className="hero-sys mono">SYS / QH-01 // INTERACTIVE</div>
 
       <div className="wrap hero-content">
-        <Image
-          className="hero-logo"
-          src="/logo-lime.png"
-          alt="Qourt Hex — Padel & Tennis Engineering"
-          height={60}
-          width={300}
-          style={{ height: 44, width: "auto" }}
-          priority
-        />
         <h1>
           <span className="lit text-glow">ENGINEER</span>
           <span className="dim">THE</span>

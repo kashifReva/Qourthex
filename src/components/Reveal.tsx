@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode, type ElementType } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode, type ElementType } from "react";
 
 export default function Reveal({
   children,
   className = "",
-  as: Tag = "div",
+  as = "div",
   style,
   id,
 }: {
@@ -36,15 +36,14 @@ export default function Reveal({
     return () => io.disconnect();
   }, []);
 
-  return (
-    <Tag
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ref={ref as any}
-      className={`reveal${inView ? " in" : ""}${className ? ` ${className}` : ""}`}
-      style={style}
-      id={id}
-    >
-      {children}
-    </Tag>
+  return createElement(
+    as,
+    {
+      ref,
+      className: `reveal${inView ? " in" : ""}${className ? ` ${className}` : ""}`,
+      style,
+      id,
+    },
+    children
   );
 }
