@@ -24,6 +24,48 @@ export default function Footer() {
               built for performance, designed for community.
             </p>
             <div className="foot-ar mono">QOURT HEX</div>
+            <div className="foot-social">
+              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </a>
+              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M14 21v-7h2.5l.5-3H14V9c0-.9.3-1.5 1.7-1.5H17V4.8c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4V11H8.5v3H11v7h3z" strokeLinejoin="round" />
+                </svg>
+              </a>
+              <a href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path
+                    d="M13 3v11.2a2.8 2.8 0 11-2.2-2.74M13 3a5.5 5.5 0 004.8 4.6M13 6.2a5.5 5.5 0 004.8 3.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
+              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M7.5 10v6.5M7.5 7.2v.1M12 16.5V13a2 2 0 014 0v3.5M12 10v6.5" strokeLinecap="round" />
+                </svg>
+              </a>
+              <a href="https://wa.me/97466444291" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path
+                    d="M20.5 11.6a8.4 8.4 0 01-12.2 7.5L4 20l1-4.1a8.4 8.4 0 1115.5-4.3z"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9.2 9.6c.2-.5.4-.5.6-.5h.5c.2 0 .4 0 .5.4.2.5.6 1.6.7 1.7.1.1.1.3 0 .4-.1.2-.2.3-.3.4-.1.1-.3.3-.4.4-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.5 1.5.2.1.4.1.5-.1.1-.2.5-.6.7-.8.2-.2.3-.2.5-.1.2.1 1.4.7 1.6.8.2.1.4.1.4.3 0 .2 0 1-.3 1.4-.3.4-1.4 1-2.3.9-.9-.1-2.6-.7-3.9-2-1.6-1.5-2.6-3.3-2.8-3.7-.2-.4-1-1.6-1-3 0-1.4.7-2.1 1-2.4z"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </a>
+            </div>
           </div>
           <div className="foot-links-col">
             <div className="foot-title">Navigate</div>

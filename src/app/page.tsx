@@ -6,6 +6,7 @@ import Engineering from "@/components/Engineering";
 import Assembly from "@/components/Assembly";
 import Services from "@/components/Services";
 import QuoteForm from "@/components/QuoteForm";
+import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
       <Assembly />
       <Services />
       <QuoteForm />
+      <Gallery />
       <Footer />
     </>
   );
