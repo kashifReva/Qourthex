@@ -1814,21 +1814,15 @@ footer {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid currentColor;
-  background: transparent;
+  border: 1px solid #6d840a;
+  background: #6d840a;
+  color: var(--w100);
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
-.foot-social a.instagram,
-.foot-social a.facebook,
-.foot-social a.tiktok,
-.foot-social a.linkedin,
-.foot-social a.whatsapp {
-  color: #6d840a;
-}
 .foot-social a:hover {
-  color: var(--w100);
-  border-color: var(--w100);
-  background: rgba(255, 255, 255, 0.1);
+  color: #6d840a;
+  border-color: #6d840a;
+  background: var(--w100);
 }
 .foot-social svg {
   width: 16px;
