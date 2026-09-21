@@ -34,6 +34,13 @@ function seg(progress: number, inStart: number, inEnd: number) {
   return Math.min(1, Math.max(0, (progress - inStart) / (inEnd - inStart)));
 }
 
+// Floor scale factor — the plane is drawn larger than the wall footprint so
+// the ground reads as a slab the court sits on (matching the reference,
+// where the grid floor visibly extends past the glass), with the actual
+// court outline inset at the fraction below.
+const FLOOR_SCALE = 1.55;
+const FLOOR_INSET = (1 - 1 / FLOOR_SCALE) / 2;
+
 function useTurfTexture() {
   return useMemo(() => {
     const w = 512;
@@ -42,24 +49,46 @@ function useTurfTexture() {
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#0d130a";
+    ctx.fillStyle = "#0a0b09";
     ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = "rgba(212,255,0,0.6)";
-    ctx.lineWidth = 4;
-    const pad = 14;
-    ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
-    ctx.beginPath();
-    ctx.moveTo(w / 2, pad);
-    ctx.lineTo(w / 2, h - pad);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(212,255,0,0.28)";
-    ctx.lineWidth = 1.5;
-    for (let x = pad; x < w - pad; x += 24) {
+
+    // fine neutral grid across the whole slab
+    ctx.strokeStyle = "rgba(255,255,255,0.07)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= w; x += 16) {
       ctx.beginPath();
-      ctx.moveTo(x, pad);
-      ctx.lineTo(x, h - pad);
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
       ctx.stroke();
     }
+    for (let y = 0; y <= h; y += 16) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // court outline inset, lining up with the glass wall footprint
+    const ix = w * FLOOR_INSET;
+    const iy = h * FLOOR_INSET;
+    const iw = w - ix * 2;
+    const ih = h - iy * 2;
+    ctx.strokeStyle = "rgba(212,255,0,0.55)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(ix, iy, iw, ih);
+    ctx.beginPath();
+    ctx.moveTo(ix + iw / 2, iy);
+    ctx.lineTo(ix + iw / 2, iy + ih);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(212,255,0,0.25)";
+    ctx.lineWidth = 1.5;
+    for (let x = ix; x < ix + iw; x += 24) {
+      ctx.beginPath();
+      ctx.moveTo(x, iy);
+      ctx.lineTo(x, iy + ih);
+      ctx.stroke();
+    }
+
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
@@ -102,15 +131,15 @@ const CORNERS = {
   bl: [-1.8, 1] as [number, number],
   br: [1.8, 1] as [number, number],
 };
-const WALL_HEIGHT = 1.3;
-const POST_HEIGHT = 2.7; // half (1.35) is the visible height above ground
+const WALL_HEIGHT = 2.0;
+const POST_HEIGHT = 4.2; // half (2.1) is the visible height above ground
 const ROOF_Y = POST_HEIGHT / 2 + 0.05;
 
 function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
   useFrame(({ camera }) => {
     const p = progressRef.current;
-    camera.position.set(lerp(4.6, 3.6, p), lerp(3.7, 3.1, p), lerp(5.3, 4.3, p));
-    camera.lookAt(0, 0.55, 0);
+    camera.position.set(lerp(5.0, 4.0, p), lerp(4.4, 3.7, p), lerp(5.7, 4.7, p));
+    camera.lookAt(0, 0.85, 0);
   });
   return null;
 }
@@ -221,9 +250,11 @@ function Wall({
     groupRef.current.position.set(lerp(fromX, midX, p), WALL_HEIGHT / 2, lerp(fromZ, midZ, p));
     groupRef.current.rotation.y = lerp(angle + fromAngleDelta, angle, p);
     const fillMat = (groupRef.current.children[0] as THREE.Mesh).material as THREE.MeshPhysicalMaterial;
-    fillMat.opacity = lerp(0, 0.4, p);
+    fillMat.opacity = lerp(0, 0.5, p);
     const edgeMat = (groupRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
-    edgeMat.opacity = lerp(0, 0.85, p);
+    edgeMat.opacity = lerp(0, 0.7, p);
+    const seamMat = (groupRef.current.children[2] as THREE.Mesh).material as THREE.MeshStandardMaterial;
+    seamMat.opacity = lerp(0, 0.55, p);
   });
 
   return (
@@ -231,17 +262,17 @@ function Wall({
       <mesh>
         <planeGeometry args={[width, WALL_HEIGHT]} />
         <meshPhysicalMaterial
-          color="#c8e6a0"
+          color="#8a9a5e"
           transparent
           opacity={0}
-          roughness={0.06}
+          roughness={0.14}
           metalness={0}
-          transmission={0.9}
-          thickness={0.4}
+          transmission={0.82}
+          thickness={0.5}
           ior={1.5}
-          envMapIntensity={1.5}
-          clearcoat={1}
-          clearcoatRoughness={0.08}
+          envMapIntensity={1.2}
+          clearcoat={0.8}
+          clearcoatRoughness={0.15}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -249,6 +280,11 @@ function Wall({
         <edgesGeometry args={[new THREE.PlaneGeometry(width, WALL_HEIGHT)]} />
         <lineBasicMaterial color={LIME} transparent opacity={0} />
       </lineSegments>
+      {/* mullion — a thin seam down the panel's midline, like a real glass joint */}
+      <mesh position={[0, 0, 0.005]}>
+        <boxGeometry args={[0.02, WALL_HEIGHT, 0.015]} />
+        <meshStandardMaterial color="#3a4022" transparent opacity={0} roughness={0.4} metalness={0.3} />
+      </mesh>
     </group>
   );
 }
@@ -286,9 +322,9 @@ function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
 
   useFrame(() => {
     const p = seg(progressRef.current, 0.5, 0.72);
-    if (fillRef.current) (fillRef.current.material as THREE.MeshPhysicalMaterial).opacity = lerp(0, 0.16, p);
-    if (edgeRef.current) (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.6, p);
-    if (braceRef.current) (braceRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.4, p);
+    if (fillRef.current) (fillRef.current.material as THREE.MeshPhysicalMaterial).opacity = 0;
+    if (edgeRef.current) (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.12, p);
+    if (braceRef.current) (braceRef.current.material as THREE.LineBasicMaterial).opacity = 0;
   });
 
   return (
@@ -321,11 +357,58 @@ function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
   );
 }
 
+// A row of hex "light fixture" caps along the far wall's top edge — the
+// detail that actually reads as a roofline in the base44 reference, rather
+// than a flat translucent lid.
+function RoofLights({ progressRef }: { progressRef: React.RefObject<number> }) {
+  const refs = useRef<(THREE.Mesh | null)[]>([]);
+  const count = 4;
+  const positions = useMemo(() => {
+    const arr: [number, number, number][] = [];
+    for (let i = 0; i < count; i++) {
+      const t = (i + 0.5) / count;
+      arr.push([lerp(CORNERS.fl[0], CORNERS.fr[0], t), WALL_HEIGHT + 0.1, CORNERS.fl[1]]);
+    }
+    return arr;
+  }, []);
+
+  useFrame(() => {
+    const p = seg(progressRef.current, 0.52, 0.74);
+    refs.current.forEach((m) => {
+      if (!m) return;
+      const mat = m.material as THREE.MeshPhysicalMaterial;
+      mat.opacity = lerp(0, 0.9, p);
+      mat.emissiveIntensity = lerp(0, 0.6, p);
+    });
+  });
+
+  return (
+    <>
+      {positions.map((pos, i) => (
+        <mesh key={i} position={pos} rotation={[0, Math.PI / 6, 0]} ref={(el) => { refs.current[i] = el; }}>
+          <cylinderGeometry args={[0.1, 0.12, 0.045, 6]} />
+          <meshPhysicalMaterial
+            color={LIME}
+            transparent
+            opacity={0}
+            metalness={0.4}
+            roughness={0.2}
+            clearcoat={0.7}
+            envMapIntensity={1.4}
+            emissive={LIME}
+            emissiveIntensity={0}
+          />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
 function Turf({ progressRef }: { progressRef: React.RefObject<number> }) {
   const texture = useTurfTexture();
   const meshRef = useRef<THREE.Mesh>(null);
-  const w = CORNERS.fr[0] - CORNERS.fl[0];
-  const d = CORNERS.bl[1] - CORNERS.fl[1];
+  const w = (CORNERS.fr[0] - CORNERS.fl[0]) * FLOOR_SCALE;
+  const d = (CORNERS.bl[1] - CORNERS.fl[1]) * FLOOR_SCALE;
 
   useFrame(() => {
     const p = seg(progressRef.current, 0, 0.5);
@@ -426,6 +509,7 @@ function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
         <Posts progressRef={progressRef} />
         <GlassPanels progressRef={progressRef} />
         <Roof progressRef={progressRef} />
+        <RoofLights progressRef={progressRef} />
         <Net progressRef={progressRef} />
         <Balls progressRef={progressRef} />
       </Spinner>
@@ -451,7 +535,7 @@ export default function Assembly3DScene({
   return (
     <Canvas
       dpr={[1, 1.75]}
-      camera={{ position: [4.6, 3.7, 5.3], fov: 36 }}
+      camera={{ position: [5.0, 4.4, 5.7], fov: 36 }}
       gl={{ antialias: true, alpha: true }}
       style={{ width: "100%", height: "100%" }}
     >
