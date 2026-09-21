@@ -34,14 +34,16 @@ function seg(progress: number, inStart: number, inEnd: number) {
   return Math.min(1, Math.max(0, (progress - inStart) / (inEnd - inStart)));
 }
 
-// Floor scale factor — the plane is drawn larger than the wall footprint so
-// the ground reads as a slab the court sits on (matching the reference,
-// where the grid floor visibly extends past the glass), with the actual
-// court outline inset at the fraction below.
+// Floor scale factor — the slab plane is drawn larger than the court
+// footprint so the ground reads as a base the court sits on (matching the
+// reference, where the grid floor visibly extends past the glass). The
+// court markings themselves live on a SEPARATE plane sized exactly to the
+// wall footprint (no inset math), so they line up with the walls/posts by
+// construction instead of relying on a fractional-inset calculation.
 const FLOOR_SCALE = 1.55;
-const FLOOR_INSET = (1 - 1 / FLOOR_SCALE) / 2;
 
-function useTurfTexture() {
+// Grid-only texture for the large background slab.
+function useSlabTexture() {
   return useMemo(() => {
     const w = 512;
     const h = 320;
@@ -68,24 +70,40 @@ function useTurfTexture() {
       ctx.stroke();
     }
 
-    // court outline inset, lining up with the glass wall footprint
-    const ix = w * FLOOR_INSET;
-    const iy = h * FLOOR_INSET;
-    const iw = w - ix * 2;
-    const ih = h - iy * 2;
-    ctx.strokeStyle = "rgba(212,255,0,0.55)";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(ix, iy, iw, ih);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, []);
+}
+
+// Court outline/centerline/stripes drawn full-bleed (edge-to-edge, no
+// inset) on a transparent background — this texture is mapped onto a plane
+// sized EXACTLY to the court footprint, so the lines land flush with the
+// wall/post positions by construction rather than by fraction-matching.
+function useCourtLinesTexture() {
+  return useMemo(() => {
+    const w = 512;
+    const h = 320;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, w, h);
+
+    const pad = 4; // keep the border stroke from clipping at the plane edge
+    ctx.strokeStyle = "rgba(212,255,0,0.6)";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
     ctx.beginPath();
-    ctx.moveTo(ix + iw / 2, iy);
-    ctx.lineTo(ix + iw / 2, iy + ih);
+    ctx.moveTo(w / 2, pad);
+    ctx.lineTo(w / 2, h - pad);
     ctx.stroke();
-    ctx.strokeStyle = "rgba(212,255,0,0.25)";
+    ctx.strokeStyle = "rgba(212,255,0,0.28)";
     ctx.lineWidth = 1.5;
-    for (let x = ix; x < ix + iw; x += 24) {
+    for (let x = pad; x < w - pad; x += 24) {
       ctx.beginPath();
-      ctx.moveTo(x, iy);
-      ctx.lineTo(x, iy + ih);
+      ctx.moveTo(x, pad);
+      ctx.lineTo(x, h - pad);
       ctx.stroke();
     }
 
@@ -410,22 +428,42 @@ function RoofLights({ progressRef }: { progressRef: React.RefObject<number> }) {
 }
 
 function Turf({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const texture = useTurfTexture();
-  const meshRef = useRef<THREE.Mesh>(null);
-  const w = (CORNERS.fr[0] - CORNERS.fl[0]) * FLOOR_SCALE;
-  const d = (CORNERS.bl[1] - CORNERS.fl[1]) * FLOOR_SCALE;
+  const slabTexture = useSlabTexture();
+  const linesTexture = useCourtLinesTexture();
+  const slabRef = useRef<THREE.Mesh>(null);
+  const linesRef = useRef<THREE.Mesh>(null);
+  const slabW = (CORNERS.fr[0] - CORNERS.fl[0]) * FLOOR_SCALE;
+  const slabD = (CORNERS.bl[1] - CORNERS.fl[1]) * FLOOR_SCALE;
+  // Unscaled — matches the wall/post footprint bounds exactly.
+  const courtW = CORNERS.fr[0] - CORNERS.fl[0];
+  const courtD = CORNERS.bl[1] - CORNERS.fl[1];
 
   useFrame(() => {
     const p = seg(progressRef.current, 0, 0.5);
-    const mat = meshRef.current?.material as THREE.MeshStandardMaterial;
-    if (mat) mat.opacity = lerp(0.08, 0.95, p);
+    const opacity = lerp(0.08, 0.95, p);
+    const slabMat = slabRef.current?.material as THREE.MeshStandardMaterial;
+    if (slabMat) slabMat.opacity = opacity;
+    const linesMat = linesRef.current?.material as THREE.MeshStandardMaterial;
+    if (linesMat) linesMat.opacity = opacity;
   });
 
   return (
-    <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-      <planeGeometry args={[w, d]} />
-      <meshStandardMaterial map={texture} transparent opacity={0.08} roughness={1} />
-    </mesh>
+    <>
+      <mesh ref={slabRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
+        <planeGeometry args={[slabW, slabD]} />
+        <meshStandardMaterial map={slabTexture} transparent opacity={0.08} roughness={1} />
+      </mesh>
+      <mesh ref={linesRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]}>
+        <planeGeometry args={[courtW, courtD]} />
+        <meshStandardMaterial
+          map={linesTexture}
+          transparent
+          opacity={0.08}
+          roughness={1}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
   );
 }
 
