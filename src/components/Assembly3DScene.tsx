@@ -21,6 +21,23 @@ const SCALE = 0.18;
 // (very dark) floor material with the brand's court-turf green.
 const COURT_COLOR = "#6d840a";
 
+// A uniform "black touch" darkening applied across every material in the
+// scene (walls, roof, net, balls, floor lines) so the whole court reads as
+// a deeper, moodier palette instead of stark bright-lime accents on black.
+const BLACK_TOUCH = 0.7;
+
+// Scales a material's base color (and emissive, if it has one) toward black
+// by `factor`, leaving hue and transparency untouched.
+function applyBlackTouch(parts: Part[], factor: number) {
+  parts.forEach((part) => {
+    part.mats.forEach((m) => {
+      const mat = m as THREE.MeshStandardMaterial;
+      if (mat.color) mat.color.multiplyScalar(factor);
+      if (mat.emissive) mat.emissive.multiplyScalar(factor);
+    });
+  });
+}
+
 // Builds a soft, fully procedural (no network/HDRI fetch) environment map so
 // the glass and metal materials below have something believable to reflect —
 // this is what turns a flat-shaded panel into something that reads as glass.
@@ -173,27 +190,40 @@ function bucketParts(scene: THREE.Object3D): Buckets {
   // The posts' dark structural metal reads correctly against a lit
   // environment, but on our near-black canvas background it needs a touch
   // more of its own baked emissive glow to stay legible as the frame
-  // assembles — a small, targeted boost, not a color change.
+  // assembles — a small, targeted boost, not a color change. Scaled by the
+  // same black-touch factor as everything else below so the posts' glow
+  // stays consistent with the rest of the now-darker palette.
   posts.forEach((part) => {
     part.mats.forEach((m) => {
       const mat = m as THREE.MeshStandardMaterial;
       if (typeof mat.emissiveIntensity === "number") {
-        mat.emissiveIntensity = Math.max(mat.emissiveIntensity, 0.05) * 16;
+        mat.emissiveIntensity = Math.max(mat.emissiveIntensity, 0.05) * 16 * BLACK_TOUCH;
       }
       if (typeof mat.envMapIntensity === "number") {
-        mat.envMapIntensity = 2.4;
+        mat.envMapIntensity = 2.4 * BLACK_TOUCH;
       }
     });
   });
 
   // The playing surface itself is recolored to the brand's court-turf
-  // green, overriding the reference file's own near-black baked floor.
+  // green (with the same black touch baked in), overriding the reference
+  // file's own near-black baked floor.
   floor.forEach((part) => {
     part.mats.forEach((m) => {
       const mat = m as THREE.MeshStandardMaterial;
-      if (mat.color) mat.color.set(COURT_COLOR);
+      if (mat.color) mat.color.set(COURT_COLOR).multiplyScalar(BLACK_TOUCH);
     });
   });
+
+  // Every other lime-accented surface (glass walls, roof fixtures, net,
+  // balls) and the white floor grid lines get the same black-touch
+  // darkening, so the whole court reads as one deeper, moodier palette
+  // instead of a dark court with stark bright-lime accents.
+  applyBlackTouch(walls, BLACK_TOUCH);
+  applyBlackTouch(net, BLACK_TOUCH);
+  applyBlackTouch(hex, BLACK_TOUCH);
+  applyBlackTouch(balls, BLACK_TOUCH);
+  applyBlackTouch(floorLines, BLACK_TOUCH);
 
   return { floor, floorLines, walls, net, balls, hex, posts };
 }
