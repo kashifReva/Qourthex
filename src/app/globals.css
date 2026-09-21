@@ -1160,6 +1160,10 @@ input[type="range"]::-moz-range-track {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 42%, rgba(90, 108, 40, 0.16), transparent 65%),
+    radial-gradient(ellipse 120% 100% at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.55) 100%),
+    var(--bg);
 }
 .assembly-visual-full canvas {
   outline: none;

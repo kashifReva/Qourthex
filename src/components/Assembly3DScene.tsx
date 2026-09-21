@@ -1,10 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 
 const LIME = "#d4ff00";
+
+// Builds a soft, fully procedural (no network/HDRI fetch) environment map so
+// the glass and metal materials below have something believable to reflect —
+// this is what turns a flat-shaded panel into something that reads as glass.
+function EnvironmentSetup() {
+  const { gl, scene } = useThree();
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl);
+    const envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = envTexture;
+    pmrem.dispose();
+    return () => {
+      envTexture.dispose();
+      scene.environment = null;
+    };
+  }, [gl, scene]);
+  return null;
+}
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -128,16 +148,28 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
         <group key={i} ref={(el) => { refs.current[i] = el; }}>
           <mesh>
             <cylinderGeometry args={[0.045, 0.045, POST_HEIGHT, 16]} />
-            <meshStandardMaterial color={LIME} transparent opacity={0.25} roughness={0.3} metalness={0.6} />
+            <meshPhysicalMaterial
+              color={LIME}
+              transparent
+              opacity={0.25}
+              roughness={0.22}
+              metalness={0.75}
+              clearcoat={0.6}
+              clearcoatRoughness={0.2}
+              envMapIntensity={1.6}
+            />
           </mesh>
           <mesh position={[0, POST_HEIGHT / 2 + 0.03, 0]} rotation={[0, Math.PI / 6, 0]}>
             <cylinderGeometry args={[0.11, 0.13, 0.06, 6]} />
-            <meshStandardMaterial
+            <meshPhysicalMaterial
               color={LIME}
               transparent
               opacity={0.2}
-              roughness={0.25}
-              metalness={0.5}
+              roughness={0.18}
+              metalness={0.65}
+              clearcoat={0.8}
+              clearcoatRoughness={0.15}
+              envMapIntensity={1.6}
               emissive={LIME}
               emissiveIntensity={0.35}
             />
@@ -188,7 +220,7 @@ function Wall({
     if (!groupRef.current) return;
     groupRef.current.position.set(lerp(fromX, midX, p), WALL_HEIGHT / 2, lerp(fromZ, midZ, p));
     groupRef.current.rotation.y = lerp(angle + fromAngleDelta, angle, p);
-    const fillMat = (groupRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
+    const fillMat = (groupRef.current.children[0] as THREE.Mesh).material as THREE.MeshPhysicalMaterial;
     fillMat.opacity = lerp(0, 0.4, p);
     const edgeMat = (groupRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
     edgeMat.opacity = lerp(0, 0.85, p);
@@ -198,7 +230,20 @@ function Wall({
     <group ref={groupRef}>
       <mesh>
         <planeGeometry args={[width, WALL_HEIGHT]} />
-        <meshStandardMaterial color="#8fb400" transparent opacity={0} roughness={0.15} metalness={0.2} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial
+          color="#c8e6a0"
+          transparent
+          opacity={0}
+          roughness={0.06}
+          metalness={0}
+          transmission={0.9}
+          thickness={0.4}
+          ior={1.5}
+          envMapIntensity={1.5}
+          clearcoat={1}
+          clearcoatRoughness={0.08}
+          side={THREE.DoubleSide}
+        />
       </mesh>
       <lineSegments>
         <edgesGeometry args={[new THREE.PlaneGeometry(width, WALL_HEIGHT)]} />
@@ -241,7 +286,7 @@ function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
 
   useFrame(() => {
     const p = seg(progressRef.current, 0.5, 0.72);
-    if (fillRef.current) (fillRef.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.14, p);
+    if (fillRef.current) (fillRef.current.material as THREE.MeshPhysicalMaterial).opacity = lerp(0, 0.16, p);
     if (edgeRef.current) (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.6, p);
     if (braceRef.current) (braceRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.4, p);
   });
@@ -250,7 +295,20 @@ function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
     <group position={[(CORNERS.fl[0] + CORNERS.fr[0]) / 2, ROOF_Y, (CORNERS.fl[1] + CORNERS.bl[1]) / 2]}>
       <mesh ref={fillRef} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color={LIME} transparent opacity={0} roughness={0.2} metalness={0.1} side={THREE.DoubleSide} />
+        <meshPhysicalMaterial
+          color={LIME}
+          transparent
+          opacity={0}
+          roughness={0.1}
+          metalness={0}
+          transmission={0.75}
+          thickness={0.2}
+          ior={1.45}
+          envMapIntensity={1.3}
+          clearcoat={0.6}
+          clearcoatRoughness={0.15}
+          side={THREE.DoubleSide}
+        />
       </mesh>
       <lineSegments ref={edgeRef} rotation={[-Math.PI / 2, 0, 0]}>
         <edgesGeometry args={[new THREE.PlaneGeometry(w, d)]} />
@@ -359,9 +417,10 @@ function Spinner({ progressRef, children }: { progressRef: React.RefObject<numbe
 function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
   return (
     <>
-      <ambientLight intensity={0.6} />
+      <ambientLight intensity={0.5} />
       <directionalLight position={[3, 5, 2]} intensity={1.1} />
       <pointLight position={[-2, 1, -2]} intensity={0.5} color={LIME} />
+      <EnvironmentSetup />
       <Spinner progressRef={progressRef}>
         <Turf progressRef={progressRef} />
         <Posts progressRef={progressRef} />
@@ -371,6 +430,9 @@ function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
         <Balls progressRef={progressRef} />
       </Spinner>
       <Rig progressRef={progressRef} />
+      <EffectComposer multisampling={0}>
+        <Bloom luminanceThreshold={0.32} luminanceSmoothing={0.3} intensity={0.55} mipmapBlur radius={0.6} />
+      </EffectComposer>
     </>
   );
 }
