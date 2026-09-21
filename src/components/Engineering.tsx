@@ -171,7 +171,11 @@ export default function Engineering() {
 
         <div className="eng-grid">
           <Reveal className="eng-visual">
-            {enabled3D ? <EngineeringScene reduceMotion={reduceMotion} /> : <StaticEngineeringDiagram />}
+            {enabled3D ? (
+              <EngineeringScene reduceMotion={reduceMotion} turfSurface={turfSurface} />
+            ) : (
+              <StaticEngineeringDiagram />
+            )}
             <div className="hud-tag" style={{ top: "40%", left: 20 }}>
               ↳ MONOFILAMENT FIBER &middot; TEXTURIZED
             </div>

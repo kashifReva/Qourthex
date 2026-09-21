@@ -7,6 +7,16 @@ import * as THREE from "three";
 
 const LIME = "#bbff2e";
 
+// The playing surface's own color — overrides the reference file's baked
+// (very dark) floor material with the brand's court-turf green.
+const COURT_COLOR = "#6d840a";
+
+// The Solar Load Simulator's slider (Engineering.tsx) ranges 30-55°C
+// ambient, which maps to a turf-surface temperature of roughly 44-77°C —
+// the range the live ball-bounce below scales against.
+const TURF_TEMP_MIN = 44;
+const TURF_TEMP_MAX = 77;
+
 // The real, authored reference model for this section's visual — the exact
 // ground-stack/turf/canopy/post/ball assembly (geometry, colors, materials)
 // exported directly from the reference build, dropped in as a static asset
@@ -145,10 +155,27 @@ function bucketParts(scene: THREE.Object3D): Buckets {
     });
   });
 
+  // The playing surface itself is recolored to the brand's court-turf
+  // green, overriding the reference file's own near-black baked floor.
+  floor.forEach((part) => {
+    part.mats.forEach((m) => {
+      const mat = m as THREE.MeshStandardMaterial;
+      if (mat.color) mat.color.set(COURT_COLOR);
+    });
+  });
+
   return { floor, floorLines, turf, canopy, posts, ball, particles };
 }
 
-function EngineeringModel({ progress }: { progress: React.RefObject<number> }) {
+function EngineeringModel({
+  progress,
+  turfSurfaceRef,
+  reduceMotion,
+}: {
+  progress: React.RefObject<number>;
+  turfSurfaceRef: React.RefObject<number>;
+  reduceMotion: boolean;
+}) {
   const { scene } = useGLTF(MODEL_URL);
   const bucketsRef = useRef<Buckets | null>(null);
 
@@ -156,7 +183,7 @@ function EngineeringModel({ progress }: { progress: React.RefObject<number> }) {
     bucketsRef.current = bucketParts(scene);
   }, [scene]);
 
-  useFrame(() => {
+  useFrame((state) => {
     const b = bucketsRef.current;
     if (!b) return;
     const p = progress.current;
@@ -166,8 +193,25 @@ function EngineeringModel({ progress }: { progress: React.RefObject<number> }) {
     b.turf.forEach((part) => updatePart(part, seg(p, 0.15)));
     b.posts.forEach((part) => updatePart(part, seg(p, 0.3)));
     b.canopy.forEach((part) => updatePart(part, seg(p, 0.5)));
-    b.ball.forEach((part) => updatePart(part, seg(p, 0.65)));
+    const ballP = seg(p, 0.65);
+    b.ball.forEach((part) => updatePart(part, ballP));
     b.particles.forEach((part) => updatePart(part, seg(p, 0.75)));
+
+    // Once the ball has settled into place, give it a live bounce whose
+    // height and speed track the Solar Load Simulator's turf-surface
+    // temperature — a hotter, higher-pressure ball bounces higher and
+    // faster, the same real effect the canopy/heat-reduction features
+    // exist to tame.
+    if (ballP >= 1 && !reduceMotion) {
+      const temp = turfSurfaceRef.current ?? TURF_TEMP_MIN;
+      const tNorm = clamp01((temp - TURF_TEMP_MIN) / (TURF_TEMP_MAX - TURF_TEMP_MIN));
+      const amplitude = lerp(0.05, 0.22, tNorm);
+      const frequency = lerp(1.6, 3.4, tNorm);
+      const bounce = Math.abs(Math.sin(state.clock.elapsedTime * frequency)) * amplitude;
+      b.ball.forEach((part) => {
+        part.object.position.y = part.targetY + bounce;
+      });
+    }
   });
 
   return <primitive object={scene} />;
@@ -188,8 +232,16 @@ function Spinner({ progress, children }: { progress: React.RefObject<number>; ch
   return <group ref={groupRef}>{children}</group>;
 }
 
-function Scene({ reduceMotion }: { reduceMotion: boolean }) {
+function Scene({ reduceMotion, turfSurface }: { reduceMotion: boolean; turfSurface: number }) {
   const progress = useRef(reduceMotion ? 1 : 0);
+  // The simulator's temperature lives in React state on the parent page and
+  // changes on every slider tick; a ref lets the per-frame bounce read the
+  // latest value without forcing the whole scene to re-render.
+  const turfSurfaceRef = useRef(turfSurface);
+  useEffect(() => {
+    turfSurfaceRef.current = turfSurface;
+  }, [turfSurface]);
+
   useFrame((state, delta) => {
     if (reduceMotion) return;
     progress.current = Math.min(1, progress.current + delta * 0.55);
@@ -203,7 +255,7 @@ function Scene({ reduceMotion }: { reduceMotion: boolean }) {
       <Spinner progress={progress}>
         <group scale={SCALE} position={[0, -0.42, 0]}>
           <Suspense fallback={null}>
-            <EngineeringModel progress={progress} />
+            <EngineeringModel progress={progress} turfSurfaceRef={turfSurfaceRef} reduceMotion={reduceMotion} />
           </Suspense>
         </group>
       </Spinner>
@@ -211,7 +263,13 @@ function Scene({ reduceMotion }: { reduceMotion: boolean }) {
   );
 }
 
-export default function EngineeringScene({ reduceMotion = false }: { reduceMotion?: boolean }) {
+export default function EngineeringScene({
+  reduceMotion = false,
+  turfSurface = 55,
+}: {
+  reduceMotion?: boolean;
+  turfSurface?: number;
+}) {
   return (
     <Canvas
       dpr={[1, 1.75]}
@@ -220,7 +278,7 @@ export default function EngineeringScene({ reduceMotion = false }: { reduceMotio
       style={{ width: "100%", height: "100%" }}
       onCreated={({ camera }) => camera.lookAt(0, 0.15, 0)}
     >
-      <Scene reduceMotion={reduceMotion} />
+      <Scene reduceMotion={reduceMotion} turfSurface={turfSurface} />
     </Canvas>
   );
 }

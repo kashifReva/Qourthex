@@ -18,6 +18,10 @@ const MODEL_URL = "/models/qourt-hex-padel-court.glb";
 // camera/bloom/post-processing setup was already tuned around.
 const SCALE = 0.18;
 
+// The playing surface's own color — overrides the reference file's baked
+// (very dark) floor material with the brand's court-turf green.
+const COURT_COLOR = "#6d840a";
+
 // Builds a soft, fully procedural (no network/HDRI fetch) environment map so
 // the glass and metal materials below have something believable to reflect —
 // this is what turns a flat-shaded panel into something that reads as glass.
@@ -180,6 +184,15 @@ function bucketParts(scene: THREE.Object3D): Buckets {
       if (typeof mat.envMapIntensity === "number") {
         mat.envMapIntensity = 2.4;
       }
+    });
+  });
+
+  // The playing surface itself is recolored to the brand's court-turf
+  // green, overriding the reference file's own near-black baked floor.
+  floor.forEach((part) => {
+    part.mats.forEach((m) => {
+      const mat = m as THREE.MeshStandardMaterial;
+      if (mat.color) mat.color.set(COURT_COLOR);
     });
   });
 
