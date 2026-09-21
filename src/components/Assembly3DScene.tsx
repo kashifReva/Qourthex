@@ -262,17 +262,17 @@ function Wall({
       <mesh>
         <planeGeometry args={[width, WALL_HEIGHT]} />
         <meshPhysicalMaterial
-          color="#8a9a5e"
+          color="#5f6b48"
           transparent
           opacity={0}
-          roughness={0.14}
+          roughness={0.2}
           metalness={0}
-          transmission={0.82}
+          transmission={0.78}
           thickness={0.5}
           ior={1.5}
-          envMapIntensity={1.2}
-          clearcoat={0.8}
-          clearcoatRoughness={0.15}
+          envMapIntensity={0.85}
+          clearcoat={0.4}
+          clearcoatRoughness={0.25}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -357,18 +357,23 @@ function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
   );
 }
 
-// A row of hex "light fixture" caps along the far wall's top edge — the
-// detail that actually reads as a roofline in the base44 reference, rather
-// than a flat translucent lid.
+// Hex "light fixture" caps along both wall's top edges — the detail that
+// actually reads as a roofline in the base44 reference, rather than a flat
+// translucent lid. Split 2-per-wall (not 4 in one straight line) so the
+// continuous turntable spin never lines them all up edge-on into a single
+// clustered blob — a straight row of 4 looks fine head-on but visibly
+// collapses into a stack at some rotation angles.
 function RoofLights({ progressRef }: { progressRef: React.RefObject<number> }) {
   const refs = useRef<(THREE.Mesh | null)[]>([]);
-  const count = 4;
+  const fracs = [0.32, 0.68];
   const positions = useMemo(() => {
     const arr: [number, number, number][] = [];
-    for (let i = 0; i < count; i++) {
-      const t = (i + 0.5) / count;
+    fracs.forEach((t) => {
       arr.push([lerp(CORNERS.fl[0], CORNERS.fr[0], t), WALL_HEIGHT + 0.1, CORNERS.fl[1]]);
-    }
+    });
+    fracs.forEach((t) => {
+      arr.push([CORNERS.fl[0], WALL_HEIGHT + 0.1, lerp(CORNERS.fl[1], CORNERS.bl[1], t)]);
+    });
     return arr;
   }, []);
 
@@ -500,9 +505,9 @@ function Spinner({ progressRef, children }: { progressRef: React.RefObject<numbe
 function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[3, 5, 2]} intensity={1.1} />
-      <pointLight position={[-2, 1, -2]} intensity={0.5} color={LIME} />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[3, 5, 2]} intensity={1} />
+      <pointLight position={[-2, 1, -2]} intensity={0.22} color="#eaf0d8" />
       <EnvironmentSetup />
       <Spinner progressRef={progressRef}>
         <Turf progressRef={progressRef} />
