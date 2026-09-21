@@ -116,7 +116,7 @@ button {
   background: linear-gradient(90deg, transparent, var(--lime), transparent);
 }
 .glow-accent {
-  box-shadow: 0 0 40px -10px rgba(187, 255, 46, 0.45);
+  box-shadow: 0 0 40px -10px rgba(109, 132, 10, 0.55);
 }
 .text-glow {
   text-shadow: 0 0 24px rgba(187, 255, 46, 0.35);
@@ -126,8 +126,8 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  background: var(--lime);
-  color: var(--bg);
+  background: #6d840a;
+  color: var(--w100);
   padding: 16px 28px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -138,7 +138,7 @@ button {
   transition: background 0.2s ease;
 }
 .btn-primary:hover {
-  background: #fff;
+  background: #86a10d;
 }
 .btn-primary:disabled {
   opacity: 0.3;
@@ -1420,8 +1420,8 @@ input[type="range"]::-moz-range-track {
   height: 20px;
 }
 .gallery-nav:hover:not(:disabled) {
-  color: var(--lime);
-  border-color: var(--lime);
+  color: #6d840a;
+  border-color: #6d840a;
 }
 .gallery-nav:disabled {
   opacity: 0.3;
@@ -1814,15 +1814,29 @@ footer {
   justify-content: center;
   width: 36px;
   height: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--w100);
+  border: 1px solid currentColor;
+  background: transparent;
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
+.foot-social a.instagram {
+  color: #e1306c;
+}
+.foot-social a.facebook {
+  color: #1877f2;
+}
+.foot-social a.tiktok {
+  color: #25f4ee;
+}
+.foot-social a.linkedin {
+  color: #0a66c2;
+}
+.foot-social a.whatsapp {
+  color: #25d366;
+}
 .foot-social a:hover {
-  color: var(--lime);
-  border-color: var(--lime);
-  background: rgba(187, 255, 46, 0.08);
+  color: var(--w100);
+  border-color: var(--w100);
+  background: rgba(255, 255, 255, 0.1);
 }
 .foot-social svg {
   width: 16px;

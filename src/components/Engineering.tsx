@@ -182,15 +182,6 @@ export default function Engineering() {
             <div className="hud-tag" style={{ bottom: "20%", right: 20 }}>
               HEX BOLT JOINT &middot; GALVANIZED ↲
             </div>
-            <div className="hud-tag" style={{ top: 68, left: 20, color: "var(--w40)", borderColor: "rgba(255,255,255,0.15)" }}>
-              CANOPY MEMBRANE
-            </div>
-            <div
-              className="hud-tag mono"
-              style={{ top: 16, right: 16, color: "var(--w40)", borderColor: "rgba(255,255,255,0.15)" }}
-            >
-              ZOOM 200%
-            </div>
           </Reveal>
 
           <Reveal className="eng-copy">

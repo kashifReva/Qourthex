@@ -15,7 +15,6 @@ export default function Hero() {
       </div>
       <div className="hero-vignette"></div>
       <div className="hero-coord mono">25&deg;17&prime;N &middot; 51&deg;32&prime;E &mdash; Doha</div>
-      <div className="hero-sys mono">SYS / QH-01 // INTERACTIVE</div>
 
       <div className="wrap hero-content">
         <h1>

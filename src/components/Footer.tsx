@@ -25,19 +25,19 @@ export default function Footer() {
             </p>
             <div className="foot-ar mono">QOURT HEX</div>
             <div className="foot-social">
-              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="instagram">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="5" />
                   <circle cx="12" cy="12" r="4" />
                   <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
                 </svg>
               </a>
-              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="facebook">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M14 21v-7h2.5l.5-3H14V9c0-.9.3-1.5 1.7-1.5H17V4.8c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4V11H8.5v3H11v7h3z" strokeLinejoin="round" />
                 </svg>
               </a>
-              <a href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok">
+              <a href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="tiktok">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path
                     d="M13 3v11.2a2.8 2.8 0 11-2.2-2.74M13 3a5.5 5.5 0 004.8 4.6M13 6.2a5.5 5.5 0 004.8 3.4"
@@ -46,13 +46,13 @@ export default function Footer() {
                   />
                 </svg>
               </a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="linkedin">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <path d="M7.5 10v6.5M7.5 7.2v.1M12 16.5V13a2 2 0 014 0v3.5M12 10v6.5" strokeLinecap="round" />
                 </svg>
               </a>
-              <a href="https://wa.me/97466444291" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+              <a href="https://wa.me/97466444291" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="whatsapp">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path
                     d="M20.5 11.6a8.4 8.4 0 01-12.2 7.5L4 20l1-4.1a8.4 8.4 0 1115.5-4.3z"
