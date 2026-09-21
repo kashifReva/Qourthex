@@ -109,7 +109,7 @@ const ROOF_Y = POST_HEIGHT / 2 + 0.05;
 function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
   useFrame(({ camera }) => {
     const p = progressRef.current;
-    camera.position.set(lerp(5.2, 4.0, p), lerp(4.2, 3.5, p), lerp(6.0, 4.8, p));
+    camera.position.set(lerp(4.6, 3.6, p), lerp(3.7, 3.1, p), lerp(5.3, 4.3, p));
     camera.lookAt(0, 0.55, 0);
   });
   return null;
@@ -451,7 +451,7 @@ export default function Assembly3DScene({
   return (
     <Canvas
       dpr={[1, 1.75]}
-      camera={{ position: [5.2, 4.2, 6.0], fov: 36 }}
+      camera={{ position: [4.6, 3.7, 5.3], fov: 36 }}
       gl={{ antialias: true, alpha: true }}
       style={{ width: "100%", height: "100%" }}
     >

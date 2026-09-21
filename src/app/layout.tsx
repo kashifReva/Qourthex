@@ -2,14 +2,16 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-const archivo = localFont({
+// Oswald — the condensed, bold-cut display face behind most sports/athletic
+// branding (scoreboards, league sites, jersey numerals). Swapped in as the
+// site's headline font in place of Archivo for a more overtly "sports" feel.
+const oswald = localFont({
   src: [
-    { path: "../fonts/archivo/archivo-latin-500-normal.woff2", weight: "500", style: "normal" },
-    { path: "../fonts/archivo/archivo-latin-700-normal.woff2", weight: "700", style: "normal" },
-    { path: "../fonts/archivo/archivo-latin-800-normal.woff2", weight: "800", style: "normal" },
-    { path: "../fonts/archivo/archivo-latin-900-normal.woff2", weight: "900", style: "normal" },
+    { path: "../fonts/oswald/oswald-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "../fonts/oswald/oswald-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "../fonts/oswald/oswald-latin-700-normal.woff2", weight: "700", style: "normal" },
   ],
-  variable: "--font-archivo",
+  variable: "--font-oswald",
   display: "swap",
 });
 
@@ -52,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${archivo.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${oswald.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>{children}</body>
     </html>

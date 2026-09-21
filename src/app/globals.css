@@ -16,7 +16,7 @@
   --w40: rgba(255, 255, 255, 0.4);
   --w30: rgba(255, 255, 255, 0.3);
 
-  --font-display: var(--font-archivo), ui-sans-serif, sans-serif;
+  --font-display: var(--font-oswald), ui-sans-serif, sans-serif;
   --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
@@ -43,8 +43,8 @@ h3,
 h4 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  letter-spacing: 0em;
 }
 p {
   margin: 0;
@@ -1176,7 +1176,7 @@ input[type="range"]::-moz-range-track {
 }
 @media (min-width: 901px) {
   .assembly-visual-full {
-    max-height: 58vh;
+    max-height: 66vh;
   }
 }
 @media (max-width: 900px) {
