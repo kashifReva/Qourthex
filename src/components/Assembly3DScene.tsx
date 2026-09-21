@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 
-const LIME = "#d4ff00";
+// The real, authored reference model — the exact glass-box padel court
+// (geometry, colors, materials, and even the part-by-part scatter/settle
+// animation data) exported directly from the reference build, dropped in
+// as a static asset rather than hand-approximated. See public/models/.
+const MODEL_URL = "/models/qourt-hex-padel-court.glb";
+
+// The model is authored in real-world meters (a 20m x 10m court, 3m walls).
+// This scale brings it down to the same rough on-screen footprint our
+// camera/bloom/post-processing setup was already tuned around.
+const SCALE = 0.18;
 
 // Builds a soft, fully procedural (no network/HDRI fetch) environment map so
 // the glass and metal materials below have something believable to reflect —
@@ -34,496 +44,193 @@ function seg(progress: number, inStart: number, inEnd: number) {
   return Math.min(1, Math.max(0, (progress - inStart) / (inEnd - inStart)));
 }
 
-// Floor scale factor — the slab plane is drawn larger than the court
-// footprint so the ground reads as a base the court sits on (matching the
-// reference, where the grid floor visibly extends past the glass). The
-// court markings themselves live on a SEPARATE plane sized exactly to the
-// wall footprint (no inset math), so they line up with the walls/posts by
-// construction instead of relying on a fractional-inset calculation.
-const FLOOR_SCALE = 1.55;
+// The reference model bakes each animated part's final ("settle") transform
+// as its normal glTF node transform, and stores the chaotic starting
+// ("scatter") transform as custom node extras — which three.js's GLTFLoader
+// carries straight through onto object.userData. So every part already
+// knows both endpoints of its own build-in animation; we just lerp between
+// them off scroll progress instead of inventing our own from/to values.
+type ScatterExtra = { x: number; y: number; z: number; rx?: number; ry?: number };
 
-// Grid-only texture for the large background slab.
-function useSlabTexture() {
-  return useMemo(() => {
-    const w = 512;
-    const h = 320;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#0a0b09";
-    ctx.fillRect(0, 0, w, h);
-
-    // fine neutral grid across the whole slab
-    ctx.strokeStyle = "rgba(255,255,255,0.07)";
-    ctx.lineWidth = 1;
-    for (let x = 0; x <= w; x += 16) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h);
-      ctx.stroke();
-    }
-    for (let y = 0; y <= h; y += 16) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }, []);
-}
-
-// Court outline/centerline/stripes drawn full-bleed (edge-to-edge, no
-// inset) on a transparent background — this texture is mapped onto a plane
-// sized EXACTLY to the court footprint, so the lines land flush with the
-// wall/post positions by construction rather than by fraction-matching.
-function useCourtLinesTexture() {
-  return useMemo(() => {
-    const w = 512;
-    const h = 320;
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d")!;
-    ctx.clearRect(0, 0, w, h);
-
-    const pad = 4; // keep the border stroke from clipping at the plane edge
-    ctx.strokeStyle = "rgba(212,255,0,0.6)";
-    ctx.lineWidth = 4;
-    ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
-    ctx.beginPath();
-    ctx.moveTo(w / 2, pad);
-    ctx.lineTo(w / 2, h - pad);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(212,255,0,0.28)";
-    ctx.lineWidth = 1.5;
-    for (let x = pad; x < w - pad; x += 24) {
-      ctx.beginPath();
-      ctx.moveTo(x, pad);
-      ctx.lineTo(x, h - pad);
-      ctx.stroke();
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }, []);
-}
-
-function usePadelBallTexture() {
-  return useMemo(() => {
-    const size = 128;
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#c8e600";
-    ctx.fillRect(0, 0, size, size);
-    ctx.strokeStyle = "#0d1a00";
-    ctx.lineWidth = size * 0.02;
-    ctx.beginPath();
-    ctx.moveTo(0, size * 0.5);
-    ctx.bezierCurveTo(size * 0.28, size * 0.05, size * 0.72, size * 0.05, size, size * 0.5);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, size * 0.5);
-    ctx.bezierCurveTo(size * 0.28, size * 0.95, size * 0.72, size * 0.95, size, size * 0.5);
-    ctx.stroke();
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    return tex;
-  }, []);
-}
-
-type Part = { group: THREE.Group | null };
-
-// Court footprint corners (x, z) — posts, walls, turf and roof all share
-// these so nothing can drift apart the way the old hard-coded wall
-// transforms did.
-const CORNERS = {
-  fl: [-1.8, -1] as [number, number],
-  fr: [1.8, -1] as [number, number],
-  bl: [-1.8, 1] as [number, number],
-  br: [1.8, 1] as [number, number],
+type Part = {
+  object: THREE.Object3D;
+  scatterPos?: THREE.Vector3;
+  targetPos?: THREE.Vector3;
+  scatterRot?: THREE.Euler;
+  targetRot?: THREE.Euler;
+  mats: THREE.Material[];
+  targetOpacities: number[];
 };
-const WALL_HEIGHT = 2.0;
-const POST_HEIGHT = 4.2; // half (2.1) is the visible height above ground
-const ROOF_Y = POST_HEIGHT / 2 + 0.05;
+
+// Some nodes (the 4 corner posts, notably) reference the SAME glTF mesh
+// index, so three.js's GLTFLoader gives each node its own Object3D but they
+// all point at the SAME shared Material instance. Mutating opacity/emissive
+// per-part would then stomp on every other part sharing it (each post
+// overwriting the last), so every material gets cloned to its own instance
+// before we touch it.
+function collectMaterials(object: THREE.Object3D): THREE.Material[] {
+  const mats: THREE.Material[] = [];
+  object.traverse((child) => {
+    const withMat = child as unknown as { material?: THREE.Material | THREE.Material[] };
+    if (withMat.material) {
+      if (Array.isArray(withMat.material)) {
+        const cloned = withMat.material.map((m) => m.clone());
+        withMat.material = cloned;
+        mats.push(...cloned);
+      } else {
+        const cloned = withMat.material.clone();
+        withMat.material = cloned;
+        mats.push(cloned);
+      }
+    }
+  });
+  return mats;
+}
+
+function makePart(object: THREE.Object3D): Part {
+  const ud = object.userData as { scatter?: ScatterExtra; settle?: ScatterExtra };
+  const mats = collectMaterials(object);
+  const targetOpacities = mats.map((m) => {
+    const mat = m as THREE.Material & { opacity: number };
+    mat.transparent = true;
+    return mat.opacity ?? 1;
+  });
+  mats.forEach((m) => {
+    (m as THREE.Material & { opacity: number }).opacity = 0;
+  });
+
+  let scatterPos: THREE.Vector3 | undefined;
+  let targetPos: THREE.Vector3 | undefined;
+  let scatterRot: THREE.Euler | undefined;
+  let targetRot: THREE.Euler | undefined;
+  if (ud?.scatter) {
+    targetPos = object.position.clone();
+    scatterPos = new THREE.Vector3(ud.scatter.x, ud.scatter.y, ud.scatter.z);
+    if (ud.scatter.rx !== undefined || ud.scatter.ry !== undefined) {
+      targetRot = object.rotation.clone();
+      scatterRot = new THREE.Euler(ud.scatter.rx ?? targetRot.x, ud.scatter.ry ?? targetRot.y, targetRot.z);
+    }
+  }
+  return { object, scatterPos, targetPos, scatterRot, targetRot, mats, targetOpacities };
+}
+
+function updatePart(part: Part, t: number) {
+  const { object, scatterPos, targetPos, scatterRot, targetRot, mats, targetOpacities } = part;
+  if (scatterPos && targetPos) {
+    object.position.set(
+      lerp(scatterPos.x, targetPos.x, t),
+      lerp(scatterPos.y, targetPos.y, t),
+      lerp(scatterPos.z, targetPos.z, t)
+    );
+  }
+  if (scatterRot && targetRot) {
+    object.rotation.set(lerp(scatterRot.x, targetRot.x, t), lerp(scatterRot.y, targetRot.y, t), targetRot.z);
+  }
+  mats.forEach((m, i) => {
+    (m as THREE.Material & { opacity: number }).opacity = lerp(0, targetOpacities[i], t);
+  });
+}
+
+type Buckets = {
+  floor: Part[];
+  floorLines: Part[];
+  walls: Part[];
+  net: Part[];
+  balls: Part[];
+  hex: Part[];
+  posts: Part[];
+};
+
+// Sort the model's top-level renderable nodes (skipping the two embedded
+// lights) back into the buckets that match the file's own authoring order:
+// floor, floor lines, 4 walls (fill+edge pairs), the net line, 6 balls, 8
+// hex roof/canopy fixtures, 4 corner posts.
+function bucketParts(scene: THREE.Object3D): Buckets {
+  const renderable = scene.children.filter((o) => {
+    const flags = o as unknown as {
+      isLight?: boolean;
+      isMesh?: boolean;
+      isLine?: boolean;
+      isLineSegments?: boolean;
+      isPoints?: boolean;
+    };
+    return !flags.isLight && (flags.isMesh || flags.isLine || flags.isLineSegments || flags.isPoints);
+  });
+
+  let i = 0;
+  const take = (n: number) => renderable.slice(i, (i += n));
+  const floor = take(1).map(makePart);
+  const floorLines = take(1).map(makePart);
+  const walls = take(8).map(makePart);
+  const net = take(1).map(makePart);
+  const balls = take(6).map(makePart);
+  const hex = take(8).map(makePart);
+  const posts = take(4).map(makePart);
+
+  // The posts' dark structural metal reads correctly against a lit
+  // environment, but on our near-black canvas background it needs a touch
+  // more of its own baked emissive glow to stay legible as the frame
+  // assembles — a small, targeted boost, not a color change.
+  posts.forEach((part) => {
+    part.mats.forEach((m) => {
+      const mat = m as THREE.MeshStandardMaterial;
+      if (typeof mat.emissiveIntensity === "number") {
+        mat.emissiveIntensity = Math.max(mat.emissiveIntensity, 0.05) * 16;
+      }
+      if (typeof mat.envMapIntensity === "number") {
+        mat.envMapIntensity = 2.4;
+      }
+    });
+  });
+
+  return { floor, floorLines, walls, net, balls, hex, posts };
+}
+
+function CourtModel({ progressRef }: { progressRef: React.RefObject<number> }) {
+  const { scene } = useGLTF(MODEL_URL);
+  const bucketsRef = useRef<Buckets | null>(null);
+
+  useEffect(() => {
+    bucketsRef.current = bucketParts(scene);
+  }, [scene]);
+
+  useFrame(() => {
+    const b = bucketsRef.current;
+    if (!b) return;
+    const p = progressRef.current;
+
+    const floorP = seg(p, 0, 0.5);
+    b.floor.forEach((part) => updatePart(part, floorP));
+    b.floorLines.forEach((part) => updatePart(part, floorP));
+
+    const postP = seg(p, 0, 0.24);
+    b.posts.forEach((part) => updatePart(part, postP));
+
+    const wallP = seg(p, 0.25, 0.5);
+    b.walls.forEach((part) => updatePart(part, wallP));
+
+    const hexP = seg(p, 0.5, 0.74);
+    b.hex.forEach((part) => updatePart(part, hexP));
+
+    const netP = seg(p, 0.6, 0.8);
+    b.net.forEach((part) => updatePart(part, netP));
+
+    const ballP = seg(p, 0.76, 0.96);
+    b.balls.forEach((part) => updatePart(part, ballP));
+  });
+
+  return <primitive object={scene} />;
+}
+
+useGLTF.preload(MODEL_URL);
 
 function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
   useFrame(({ camera }) => {
     const p = progressRef.current;
-    camera.position.set(lerp(5.0, 4.0, p), lerp(4.4, 3.7, p), lerp(5.7, 4.7, p));
-    camera.lookAt(0, 0.85, 0);
+    camera.position.set(lerp(3.6, 2.7, p), lerp(2.5, 1.95, p), lerp(3.9, 3.0, p));
+    camera.lookAt(0, 0.22, 0);
   });
   return null;
-}
-
-function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const refs = useRef<(THREE.Group | null)[]>([]);
-  // corner target positions (x, z) and scattered origin per post
-  const corners = useMemo(
-    () => [
-      { target: [CORNERS.fl[0], 0, CORNERS.fl[1]] as [number, number, number], from: [-4.4, 1.6, -3.2] as [number, number, number], rot: -0.9 },
-      { target: [CORNERS.fr[0], 0, CORNERS.fr[1]] as [number, number, number], from: [4.6, 1.8, -3.4] as [number, number, number], rot: 0.8 },
-      { target: [CORNERS.bl[0], 0, CORNERS.bl[1]] as [number, number, number], from: [-4.8, 2.0, 3.2] as [number, number, number], rot: 0.7 },
-      { target: [CORNERS.br[0], 0, CORNERS.br[1]] as [number, number, number], from: [5.0, 1.4, 3.0] as [number, number, number], rot: -0.75 },
-    ],
-    []
-  );
-
-  useFrame(() => {
-    const p = seg(progressRef.current, 0, 0.24);
-    corners.forEach((c, i) => {
-      const g = refs.current[i];
-      if (!g) return;
-      g.position.set(lerp(c.from[0], c.target[0], p), lerp(c.from[1], c.target[1], p), lerp(c.from[2], c.target[2], p));
-      g.rotation.z = lerp(c.rot, 0, p);
-      const postMat = (g.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
-      if (postMat) postMat.opacity = lerp(0.25, 1, p);
-      const capMat = (g.children[1] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
-      if (capMat) capMat.opacity = lerp(0.2, 0.95, p);
-    });
-  });
-
-  return (
-    <>
-      {corners.map((_, i) => (
-        <group key={i} ref={(el) => { refs.current[i] = el; }}>
-          <mesh>
-            <cylinderGeometry args={[0.045, 0.045, POST_HEIGHT, 16]} />
-            <meshPhysicalMaterial
-              color={LIME}
-              transparent
-              opacity={0.25}
-              roughness={0.22}
-              metalness={0.75}
-              clearcoat={0.6}
-              clearcoatRoughness={0.2}
-              envMapIntensity={1.6}
-            />
-          </mesh>
-          <mesh position={[0, POST_HEIGHT / 2 + 0.03, 0]} rotation={[0, Math.PI / 6, 0]}>
-            <cylinderGeometry args={[0.11, 0.13, 0.06, 6]} />
-            <meshPhysicalMaterial
-              color={LIME}
-              transparent
-              opacity={0.2}
-              roughness={0.18}
-              metalness={0.65}
-              clearcoat={0.8}
-              clearcoatRoughness={0.15}
-              envMapIntensity={1.6}
-              emissive={LIME}
-              emissiveIntensity={0.35}
-            />
-          </mesh>
-        </group>
-      ))}
-    </>
-  );
-}
-
-// A single wall panel spanning two real court corners, so it always sits
-// flush with the floor edge and the corner posts instead of a hand-tuned
-// position/rotation that can drift apart from the rest of the geometry.
-function Wall({
-  progressRef,
-  a,
-  b,
-  inStart,
-  inEnd,
-  outward,
-  fromAngleDelta,
-}: {
-  progressRef: React.RefObject<number>;
-  a: [number, number];
-  b: [number, number];
-  inStart: number;
-  inEnd: number;
-  outward: number;
-  fromAngleDelta: number;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
-
-  const { midX, midZ, width, angle, fromX, fromZ } = useMemo(() => {
-    const dx = b[0] - a[0];
-    const dz = b[1] - a[1];
-    const width = Math.hypot(dx, dz);
-    const midX = (a[0] + b[0]) / 2;
-    const midZ = (a[1] + b[1]) / 2;
-    const angle = Math.atan2(-dz, dx);
-    const nLen = Math.hypot(dz, -dx) || 1;
-    const nx = dz / nLen;
-    const nz = -dx / nLen;
-    return { midX, midZ, width, angle, fromX: midX + nx * outward, fromZ: midZ + nz * outward };
-  }, [a, b, outward]);
-
-  useFrame(() => {
-    const p = seg(progressRef.current, inStart, inEnd);
-    if (!groupRef.current) return;
-    groupRef.current.position.set(lerp(fromX, midX, p), WALL_HEIGHT / 2, lerp(fromZ, midZ, p));
-    groupRef.current.rotation.y = lerp(angle + fromAngleDelta, angle, p);
-    const fillMat = (groupRef.current.children[0] as THREE.Mesh).material as THREE.MeshPhysicalMaterial;
-    fillMat.opacity = lerp(0, 0.5, p);
-    const edgeMat = (groupRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
-    edgeMat.opacity = lerp(0, 0.7, p);
-    const seamMat = (groupRef.current.children[2] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-    seamMat.opacity = lerp(0, 0.55, p);
-  });
-
-  return (
-    <group ref={groupRef}>
-      <mesh>
-        <planeGeometry args={[width, WALL_HEIGHT]} />
-        <meshPhysicalMaterial
-          color="#5f6b48"
-          transparent
-          opacity={0}
-          roughness={0.2}
-          metalness={0}
-          transmission={0.78}
-          thickness={0.5}
-          ior={1.5}
-          envMapIntensity={0.85}
-          clearcoat={0.4}
-          clearcoatRoughness={0.25}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <lineSegments>
-        <edgesGeometry args={[new THREE.PlaneGeometry(width, WALL_HEIGHT)]} />
-        <lineBasicMaterial color={LIME} transparent opacity={0} />
-      </lineSegments>
-      {/* mullion — a thin seam down the panel's midline, like a real glass joint */}
-      <mesh position={[0, 0, 0.005]}>
-        <boxGeometry args={[0.02, WALL_HEIGHT, 0.015]} />
-        <meshStandardMaterial color="#3a4022" transparent opacity={0} roughness={0.4} metalness={0.3} />
-      </mesh>
-    </group>
-  );
-}
-
-function GlassPanels({ progressRef }: { progressRef: React.RefObject<number> }) {
-  return (
-    <>
-      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.bl} inStart={0.25} inEnd={0.46} outward={2.6} fromAngleDelta={-0.6} />
-      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.fr} inStart={0.29} inEnd={0.5} outward={2.6} fromAngleDelta={0.6} />
-    </>
-  );
-}
-
-// A light mesh/truss roof over the whole footprint — translucent so the
-// court underneath stays visible, with a couple of cross-braces so it
-// reads as a structure rather than a flat lid.
-function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const fillRef = useRef<THREE.Mesh>(null);
-  const edgeRef = useRef<THREE.LineSegments>(null);
-  const braceRef = useRef<THREE.LineSegments>(null);
-  const w = CORNERS.fr[0] - CORNERS.fl[0];
-  const d = CORNERS.bl[1] - CORNERS.fl[1];
-
-  const braceGeometry = useMemo(() => {
-    const geom = new THREE.BufferGeometry();
-    const pts = new Float32Array([
-      -w / 2, 0, -d / 2, w / 2, 0, d / 2,
-      w / 2, 0, -d / 2, -w / 2, 0, d / 2,
-      0, 0, -d / 2, 0, 0, d / 2,
-      -w / 2, 0, 0, w / 2, 0, 0,
-    ]);
-    geom.setAttribute("position", new THREE.BufferAttribute(pts, 3));
-    return geom;
-  }, [w, d]);
-
-  useFrame(() => {
-    const p = seg(progressRef.current, 0.5, 0.72);
-    if (fillRef.current) (fillRef.current.material as THREE.MeshPhysicalMaterial).opacity = 0;
-    if (edgeRef.current) (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.12, p);
-    if (braceRef.current) (braceRef.current.material as THREE.LineBasicMaterial).opacity = 0;
-  });
-
-  return (
-    <group position={[(CORNERS.fl[0] + CORNERS.fr[0]) / 2, ROOF_Y, (CORNERS.fl[1] + CORNERS.bl[1]) / 2]}>
-      <mesh ref={fillRef} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[w, d]} />
-        <meshPhysicalMaterial
-          color={LIME}
-          transparent
-          opacity={0}
-          roughness={0.1}
-          metalness={0}
-          transmission={0.75}
-          thickness={0.2}
-          ior={1.45}
-          envMapIntensity={1.3}
-          clearcoat={0.6}
-          clearcoatRoughness={0.15}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-      <lineSegments ref={edgeRef} rotation={[-Math.PI / 2, 0, 0]}>
-        <edgesGeometry args={[new THREE.PlaneGeometry(w, d)]} />
-        <lineBasicMaterial color={LIME} transparent opacity={0} />
-      </lineSegments>
-      <lineSegments ref={braceRef} geometry={braceGeometry}>
-        <lineBasicMaterial color={LIME} transparent opacity={0} />
-      </lineSegments>
-    </group>
-  );
-}
-
-// Hex "light fixture" caps along both wall's top edges — the detail that
-// actually reads as a roofline in the base44 reference, rather than a flat
-// translucent lid. Split 2-per-wall (not 4 in one straight line) so the
-// continuous turntable spin never lines them all up edge-on into a single
-// clustered blob — a straight row of 4 looks fine head-on but visibly
-// collapses into a stack at some rotation angles.
-function RoofLights({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const refs = useRef<(THREE.Mesh | null)[]>([]);
-  const fracs = [0.32, 0.68];
-  const positions = useMemo(() => {
-    const arr: [number, number, number][] = [];
-    fracs.forEach((t) => {
-      arr.push([lerp(CORNERS.fl[0], CORNERS.fr[0], t), WALL_HEIGHT + 0.1, CORNERS.fl[1]]);
-    });
-    fracs.forEach((t) => {
-      arr.push([CORNERS.fl[0], WALL_HEIGHT + 0.1, lerp(CORNERS.fl[1], CORNERS.bl[1], t)]);
-    });
-    return arr;
-  }, []);
-
-  useFrame(() => {
-    const p = seg(progressRef.current, 0.52, 0.74);
-    refs.current.forEach((m) => {
-      if (!m) return;
-      const mat = m.material as THREE.MeshPhysicalMaterial;
-      mat.opacity = lerp(0, 0.9, p);
-      mat.emissiveIntensity = lerp(0, 0.6, p);
-    });
-  });
-
-  return (
-    <>
-      {positions.map((pos, i) => (
-        <mesh key={i} position={pos} rotation={[0, Math.PI / 6, 0]} ref={(el) => { refs.current[i] = el; }}>
-          <cylinderGeometry args={[0.1, 0.12, 0.045, 6]} />
-          <meshPhysicalMaterial
-            color={LIME}
-            transparent
-            opacity={0}
-            metalness={0.4}
-            roughness={0.2}
-            clearcoat={0.7}
-            envMapIntensity={1.4}
-            emissive={LIME}
-            emissiveIntensity={0}
-          />
-        </mesh>
-      ))}
-    </>
-  );
-}
-
-function Turf({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const slabTexture = useSlabTexture();
-  const linesTexture = useCourtLinesTexture();
-  const slabRef = useRef<THREE.Mesh>(null);
-  const linesRef = useRef<THREE.Mesh>(null);
-  const slabW = (CORNERS.fr[0] - CORNERS.fl[0]) * FLOOR_SCALE;
-  const slabD = (CORNERS.bl[1] - CORNERS.fl[1]) * FLOOR_SCALE;
-  // Unscaled — matches the wall/post footprint bounds exactly.
-  const courtW = CORNERS.fr[0] - CORNERS.fl[0];
-  const courtD = CORNERS.bl[1] - CORNERS.fl[1];
-
-  useFrame(() => {
-    const p = seg(progressRef.current, 0, 0.5);
-    const opacity = lerp(0.08, 0.95, p);
-    const slabMat = slabRef.current?.material as THREE.MeshStandardMaterial;
-    if (slabMat) slabMat.opacity = opacity;
-    const linesMat = linesRef.current?.material as THREE.MeshStandardMaterial;
-    if (linesMat) linesMat.opacity = opacity;
-  });
-
-  return (
-    <>
-      <mesh ref={slabRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-        <planeGeometry args={[slabW, slabD]} />
-        <meshStandardMaterial map={slabTexture} transparent opacity={0.08} roughness={1} />
-      </mesh>
-      <mesh ref={linesRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, 0]}>
-        <planeGeometry args={[courtW, courtD]} />
-        <meshStandardMaterial
-          map={linesTexture}
-          transparent
-          opacity={0.08}
-          roughness={1}
-          depthWrite={false}
-        />
-      </mesh>
-    </>
-  );
-}
-
-function Net({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame(() => {
-    const p = seg(progressRef.current, 0.76, 0.94);
-    if (groupRef.current) {
-      groupRef.current.scale.y = Math.max(0.001, p);
-      const mesh = groupRef.current.children[0] as THREE.Mesh;
-      const mat = mesh.material as THREE.MeshBasicMaterial;
-      mat.opacity = lerp(0, 1, p);
-    }
-  });
-
-  return (
-    <group ref={groupRef} position={[0, 0.35, 0]} scale={[1, 0.001, 1]}>
-      <mesh>
-        <planeGeometry args={[0.05, 0.7]} />
-        <meshBasicMaterial color={LIME} transparent opacity={0} side={THREE.DoubleSide} />
-      </mesh>
-    </group>
-  );
-}
-
-function Balls({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const texture = usePadelBallTexture();
-  const refs = useRef<(THREE.Mesh | null)[]>([]);
-  const specs = useMemo(
-    () => [
-      { from: [-1.1, 2.0, -0.6] as [number, number, number], to: [-0.7, 0.06, -0.4] as [number, number, number] },
-      { from: [1.3, 2.4, 0.4] as [number, number, number], to: [0.6, 0.06, 0.5] as [number, number, number] },
-      { from: [0.2, 2.8, 1.1] as [number, number, number], to: [0.1, 0.06, -0.7] as [number, number, number] },
-    ],
-    []
-  );
-
-  useFrame((state) => {
-    const p = seg(progressRef.current, 0.05, 0.4);
-    specs.forEach((s, i) => {
-      const m = refs.current[i];
-      if (!m) return;
-      m.position.set(lerp(s.from[0], s.to[0], p), lerp(s.from[1], s.to[1], p), lerp(s.from[2], s.to[2], p));
-      m.rotation.y = state.clock.elapsedTime * 0.6 + i;
-      const mat = m.material as THREE.MeshStandardMaterial;
-      mat.opacity = lerp(0.3, 1, p);
-    });
-  });
-
-  return (
-    <>
-      {specs.map((_, i) => (
-        <mesh key={i} ref={(el) => { refs.current[i] = el; }}>
-          <sphereGeometry args={[0.075, 20, 20]} />
-          <meshStandardMaterial map={texture} transparent opacity={0.3} roughness={0.8} />
-        </mesh>
-      ))}
-    </>
-  );
 }
 
 // Once the court is mostly assembled, let the whole model turn slowly like a
@@ -543,22 +250,19 @@ function Spinner({ progressRef, children }: { progressRef: React.RefObject<numbe
 function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
   return (
     <>
-      <ambientLight intensity={0.4} />
-      <directionalLight position={[3, 5, 2]} intensity={1} />
-      <pointLight position={[-2, 1, -2]} intensity={0.22} color="#eaf0d8" />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[3, 5, 2]} intensity={0.7} />
       <EnvironmentSetup />
-      <Spinner progressRef={progressRef}>
-        <Turf progressRef={progressRef} />
-        <Posts progressRef={progressRef} />
-        <GlassPanels progressRef={progressRef} />
-        <Roof progressRef={progressRef} />
-        <RoofLights progressRef={progressRef} />
-        <Net progressRef={progressRef} />
-        <Balls progressRef={progressRef} />
-      </Spinner>
+      <group scale={SCALE}>
+        <Spinner progressRef={progressRef}>
+          <Suspense fallback={null}>
+            <CourtModel progressRef={progressRef} />
+          </Suspense>
+        </Spinner>
+      </group>
       <Rig progressRef={progressRef} />
       <EffectComposer multisampling={0}>
-        <Bloom luminanceThreshold={0.32} luminanceSmoothing={0.3} intensity={0.55} mipmapBlur radius={0.6} />
+        <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.3} intensity={0.6} mipmapBlur radius={0.6} />
       </EffectComposer>
     </>
   );
@@ -578,7 +282,7 @@ export default function Assembly3DScene({
   return (
     <Canvas
       dpr={[1, 1.75]}
-      camera={{ position: [5.0, 4.4, 5.7], fov: 36 }}
+      camera={{ position: [3.6, 2.5, 3.9], fov: 34 }}
       gl={{ antialias: true, alpha: true }}
       style={{ width: "100%", height: "100%" }}
     >
