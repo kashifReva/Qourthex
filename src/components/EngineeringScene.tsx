@@ -1,10 +1,26 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 
-const LIME = "#d4ff00";
+const LIME = "#bbff2e";
+
+// The real, authored reference model for this section's visual — the exact
+// ground-stack/turf/canopy/post/ball assembly (geometry, colors, materials)
+// exported directly from the reference build, dropped in as a static asset
+// rather than hand-approximated. See public/models/.
+const MODEL_URL = "/models/qourt-hex-macro-zoom.glb";
+
+// The model is authored across a ~9x9 unit footprint (X/Z +-4.5), ~3 units
+// tall. This scale brings it down to roughly the same on-screen footprint
+// the old hand-built scene was tuned around.
+const SCALE = 0.28;
+
+// How far (in the model's own, pre-scale units) each part rises into its
+// baked resting position as it fades in.
+const RISE = 0.9;
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -22,168 +38,142 @@ function seg(progress: number, delay: number, span = 0.35) {
   return easeOutCubic(clamp01((progress - delay) / span));
 }
 
-// Ground-stack cross section, bottom to top: compacted sub-base, elastic
-// shock pad, woven backing, sand/rubber infill. The monofilament turf
-// blades sit on top as their own layer (below).
-const GROUND_LAYERS = [
-  { key: "subbase", delay: 0, y: 0, size: [2.4, 0.12, 1.6] as [number, number, number], color: "#3c3c2e", opacity: 0.92 },
-  { key: "shockpad", delay: 0.08, y: 0.32, size: [2.3, 0.09, 1.52] as [number, number, number], color: "#5c6238", opacity: 0.55 },
-  { key: "backing", delay: 0.16, y: 0.5, size: [2.22, 0.05, 1.42] as [number, number, number], color: "#20220f", opacity: 0.85 },
-  { key: "infill", delay: 0.24, y: 0.68, size: [2.14, 0.08, 1.36] as [number, number, number], color: "#8d7c3f", opacity: 0.55 },
-];
-
-const STRUT_CORNERS: [number, number][] = [
-  [-1.18, -0.78],
-  [1.18, -0.78],
-  [-1.18, 0.78],
-  [1.18, 0.78],
-];
-
-function GroundLayer({
-  progress,
-  layer,
-}: {
-  progress: React.RefObject<number>;
-  layer: (typeof GROUND_LAYERS)[number];
-}) {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame(() => {
-    if (!ref.current) return;
-    const p = seg(progress.current, layer.delay);
-    ref.current.position.y = lerp(0.04, layer.y, p);
-    (ref.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, layer.opacity, p);
-  });
-  return (
-    <mesh ref={ref} position={[0, 0.04, 0]}>
-      <boxGeometry args={layer.size} />
-      <meshStandardMaterial color={layer.color} transparent opacity={0} roughness={0.65} metalness={0.05} />
-    </mesh>
-  );
-}
-
-// The monofilament turf fiber layer — many thin upright blades over the
-// infill, instead of a flat plane, so it reads as an actual textured
-// surface rather than a diagram of one.
-function TurfBlades({ progress }: { progress: React.RefObject<number> }) {
-  const groupRef = useRef<THREE.Group>(null);
-  const baseRef = useRef<THREE.Mesh>(null);
-  const blades = useMemo(() => {
-    const arr: { x: number; z: number; h: number; rotY: number }[] = [];
-    const cols = 15;
-    const rows = 9;
-    for (let i = 0; i < cols; i++) {
-      for (let j = 0; j < rows; j++) {
-        const x = (i / (cols - 1) - 0.5) * 2.0 + (Math.random() - 0.5) * 0.06;
-        const z = (j / (rows - 1) - 0.5) * 1.28 + (Math.random() - 0.5) * 0.06;
-        const h = 0.1 + Math.random() * 0.06;
-        arr.push({ x, z, h, rotY: Math.random() * Math.PI });
+// Some nodes (the 4 corner posts, notably) reference the SAME glTF mesh
+// index, so three.js's GLTFLoader gives each node its own Object3D but they
+// all point at the SAME shared Material instance. Mutating opacity/emissive
+// per-part would then stomp on every other part sharing it (each post
+// overwriting the last), so every material gets cloned to its own instance
+// before we touch it.
+function collectMaterials(object: THREE.Object3D): THREE.Material[] {
+  const mats: THREE.Material[] = [];
+  object.traverse((child) => {
+    const withMat = child as unknown as { material?: THREE.Material | THREE.Material[] };
+    if (withMat.material) {
+      if (Array.isArray(withMat.material)) {
+        const cloned = withMat.material.map((m) => m.clone());
+        withMat.material = cloned;
+        mats.push(...cloned);
+      } else {
+        const cloned = withMat.material.clone();
+        withMat.material = cloned;
+        mats.push(cloned);
       }
     }
-    return arr;
-  }, []);
-
-  useFrame(() => {
-    const p = seg(progress.current, 0.3);
-    if (groupRef.current) {
-      groupRef.current.position.y = lerp(0.04, 0.86, p);
-      groupRef.current.children.forEach((c) => {
-        const mesh = c as THREE.Mesh;
-        const mat = mesh.material as THREE.MeshStandardMaterial;
-        if (mat) mat.opacity = lerp(0, 0.9, p);
-      });
-    }
-    if (baseRef.current) {
-      (baseRef.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.85, p);
-    }
   });
-
-  return (
-    <group ref={groupRef} position={[0, 0.04, 0]}>
-      {blades.map((b, i) => (
-        <mesh key={i} position={[b.x, b.h / 2, b.z]} rotation={[0, b.rotY, 0]}>
-          <boxGeometry args={[0.018, b.h, 0.018]} />
-          <meshStandardMaterial color={LIME} transparent opacity={0} roughness={0.3} />
-        </mesh>
-      ))}
-      <mesh ref={baseRef} position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[2.16, 1.38]} />
-        <meshStandardMaterial color="#1c2a0e" transparent opacity={0} roughness={0.9} side={THREE.DoubleSide} />
-      </mesh>
-    </group>
-  );
+  return mats;
 }
 
-// The retractable canopy membrane, floating above the ground stack like a
-// roof, supported by 4 thin struts with a hex bolt joint detail on one —
-// mirroring the corner-post hex caps used elsewhere on the site.
-function Canopy({ progress }: { progress: React.RefObject<number> }) {
-  const fillRef = useRef<THREE.Mesh>(null);
-  const edgeRef = useRef<THREE.LineSegments>(null);
-  const strutRefs = useRef<(THREE.Mesh | null)[]>([]);
-  const capRef = useRef<THREE.Mesh>(null);
+type Part = {
+  object: THREE.Object3D;
+  targetY: number;
+  mats: THREE.Material[];
+  targetOpacities: number[];
+};
 
-  const edgeGeometry = useMemo(() => new THREE.EdgesGeometry(new THREE.PlaneGeometry(2.5, 1.7)), []);
+// Unlike the Assembly section's court model, this GLB carries no baked
+// scatter/settle extras — so instead of lerping between two authored
+// transforms, each part simply rises a fixed offset into its own baked
+// resting position while fading in, staggered per bucket by `seg()`.
+function makePart(object: THREE.Object3D): Part {
+  const mats = collectMaterials(object);
+  const targetOpacities = mats.map((m) => {
+    const mat = m as THREE.Material & { opacity: number };
+    mat.transparent = true;
+    return mat.opacity ?? 1;
+  });
+  mats.forEach((m) => {
+    (m as THREE.Material & { opacity: number }).opacity = 0;
+  });
+  return { object, targetY: object.position.y, mats, targetOpacities };
+}
 
-  useFrame(() => {
-    const pCanopy = seg(progress.current, 0.55);
-    if (fillRef.current) {
-      fillRef.current.position.y = lerp(0.5, 1.55, pCanopy);
-      (fillRef.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.2, pCanopy);
-    }
-    if (edgeRef.current) {
-      edgeRef.current.position.y = lerp(0.5, 1.55, pCanopy);
-      (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.75, pCanopy);
-    }
-    const pStrut = seg(progress.current, 0.45);
-    strutRefs.current.forEach((m) => {
-      if (!m) return;
-      (m.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.35, pStrut);
+function updatePart(part: Part, t: number) {
+  const { object, targetY, mats, targetOpacities } = part;
+  object.position.y = lerp(targetY - RISE, targetY, t);
+  mats.forEach((m, i) => {
+    (m as THREE.Material & { opacity: number }).opacity = lerp(0, targetOpacities[i], t);
+  });
+}
+
+type Buckets = {
+  floor: Part[];
+  floorLines: Part[];
+  turf: Part[];
+  canopy: Part[];
+  posts: Part[];
+  ball: Part[];
+  particles: Part[];
+};
+
+// Sort the model's top-level renderable nodes (skipping the 2 embedded
+// lights and 2 empty helper nodes) back into the buckets that match the
+// file's own authoring order: floor, floor lines, the instanced turf infill
+// granules, canopy (fill + edge), 4 corner posts, the ball, and the dust
+// particles.
+function bucketParts(scene: THREE.Object3D): Buckets {
+  const renderable = scene.children.filter((o) => {
+    const flags = o as unknown as {
+      isLight?: boolean;
+      isMesh?: boolean;
+      isLine?: boolean;
+      isLineSegments?: boolean;
+      isPoints?: boolean;
+    };
+    return !flags.isLight && (flags.isMesh || flags.isLine || flags.isLineSegments || flags.isPoints);
+  });
+
+  let i = 0;
+  const take = (n: number) => renderable.slice(i, (i += n));
+  const floor = take(1).map(makePart);
+  const floorLines = take(1).map(makePart);
+  const turf = take(1).map(makePart);
+  const canopy = take(2).map(makePart);
+  const posts = take(4).map(makePart);
+  const ball = take(1).map(makePart);
+  const particles = take(1).map(makePart);
+
+  // The posts' dark structural metal reads correctly under a full studio
+  // light rig, but against our near-black canvas background it needs a
+  // touch more of its own baked emissive glow to stay legible as the frame
+  // assembles — a small, targeted boost, not a color change.
+  posts.forEach((part) => {
+    part.mats.forEach((m) => {
+      const mat = m as THREE.MeshStandardMaterial;
+      if (typeof mat.emissiveIntensity === "number") {
+        mat.emissiveIntensity = Math.max(mat.emissiveIntensity, 0.05) * 6;
+      }
     });
-    if (capRef.current) {
-      const pCap = seg(progress.current, 0.68);
-      (capRef.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.85, pCap);
-    }
   });
 
-  return (
-    <>
-      <mesh ref={fillRef} rotation={[-Math.PI / 2, 0, 0.02]} position={[0, 0.5, 0]}>
-        <planeGeometry args={[2.5, 1.7]} />
-        <meshStandardMaterial color={LIME} transparent opacity={0} side={THREE.DoubleSide} roughness={0.2} />
-      </mesh>
-      <lineSegments ref={edgeRef} geometry={edgeGeometry} rotation={[-Math.PI / 2, 0, 0.02]} position={[0, 0.5, 0]}>
-        <lineBasicMaterial color={LIME} transparent opacity={0} />
-      </lineSegments>
-
-      {STRUT_CORNERS.map((c, i) => (
-        <mesh
-          key={i}
-          ref={(el) => {
-            strutRefs.current[i] = el;
-          }}
-          position={[c[0], 0.78, c[1]]}
-        >
-          <cylinderGeometry args={[0.022, 0.022, 1.56, 10]} />
-          <meshStandardMaterial color={LIME} transparent opacity={0} metalness={0.6} roughness={0.3} />
-        </mesh>
-      ))}
-
-      {/* hex bolt joint detail, anchoring one strut to the canopy */}
-      <mesh ref={capRef} position={[STRUT_CORNERS[1][0], 1.56, STRUT_CORNERS[1][1]]} rotation={[0, Math.PI / 6, 0]}>
-        <cylinderGeometry args={[0.075, 0.09, 0.05, 6]} />
-        <meshStandardMaterial
-          color={LIME}
-          transparent
-          opacity={0}
-          metalness={0.5}
-          roughness={0.25}
-          emissive={LIME}
-          emissiveIntensity={0.35}
-        />
-      </mesh>
-    </>
-  );
+  return { floor, floorLines, turf, canopy, posts, ball, particles };
 }
+
+function EngineeringModel({ progress }: { progress: React.RefObject<number> }) {
+  const { scene } = useGLTF(MODEL_URL);
+  const bucketsRef = useRef<Buckets | null>(null);
+
+  useEffect(() => {
+    bucketsRef.current = bucketParts(scene);
+  }, [scene]);
+
+  useFrame(() => {
+    const b = bucketsRef.current;
+    if (!b) return;
+    const p = progress.current;
+
+    b.floor.forEach((part) => updatePart(part, seg(p, 0)));
+    b.floorLines.forEach((part) => updatePart(part, seg(p, 0)));
+    b.turf.forEach((part) => updatePart(part, seg(p, 0.15)));
+    b.posts.forEach((part) => updatePart(part, seg(p, 0.3)));
+    b.canopy.forEach((part) => updatePart(part, seg(p, 0.5)));
+    b.ball.forEach((part) => updatePart(part, seg(p, 0.65)));
+    b.particles.forEach((part) => updatePart(part, seg(p, 0.75)));
+  });
+
+  return <primitive object={scene} />;
+}
+
+useGLTF.preload(MODEL_URL);
 
 // Slow continuous turntable spin once the exploded assembly has finished
 // coming together, echoing the same "showcase" moment used in the Assembly
@@ -211,12 +201,10 @@ function Scene({ reduceMotion }: { reduceMotion: boolean }) {
       <directionalLight position={[3, 5, 2]} intensity={1.05} />
       <pointLight position={[-2, 1.4, -1.6]} intensity={0.45} color={LIME} />
       <Spinner progress={progress}>
-        <group position={[0, -0.55, 0]}>
-          {GROUND_LAYERS.map((layer) => (
-            <GroundLayer key={layer.key} progress={progress} layer={layer} />
-          ))}
-          <TurfBlades progress={progress} />
-          <Canopy progress={progress} />
+        <group scale={SCALE} position={[0, -0.42, 0]}>
+          <Suspense fallback={null}>
+            <EngineeringModel progress={progress} />
+          </Suspense>
         </group>
       </Spinner>
     </>

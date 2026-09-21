@@ -18,7 +18,7 @@ export default function CourtFloor() {
     ctx.fillStyle = "#0a0c0a";
     ctx.fillRect(0, 0, w, h);
 
-    ctx.strokeStyle = "rgba(212,255,0,0.55)";
+    ctx.strokeStyle = "rgba(187,255,46,0.55)";
     ctx.lineWidth = 4;
     const pad = 40;
     // outer court boundary
@@ -29,7 +29,7 @@ export default function CourtFloor() {
     ctx.lineTo(w / 2, h - pad);
     ctx.stroke();
     // net line
-    ctx.strokeStyle = "rgba(212,255,0,0.85)";
+    ctx.strokeStyle = "rgba(187,255,46,0.85)";
     ctx.lineWidth = 6;
     ctx.beginPath();
     ctx.moveTo(pad, h / 2);

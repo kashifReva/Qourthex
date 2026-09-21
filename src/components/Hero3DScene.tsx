@@ -53,7 +53,7 @@ export default function Hero3DScene() {
     >
       <ambientLight intensity={0.55} />
       <directionalLight position={[3, 4, 3]} intensity={1.1} color="#ffffff" />
-      <pointLight position={[-3, -1, 2]} intensity={0.6} color="#d4ff00" />
+      <pointLight position={[-3, -1, 2]} intensity={0.6} color="#bbff2e" />
 
       <Suspense fallback={null}>
         <CourtFloor />

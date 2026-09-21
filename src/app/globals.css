@@ -4,7 +4,7 @@
   --bg: #070807;
   --bg-2: #0a0c0a;
   --card: #0c0a0a;
-  --lime: #d4ff00;
+  --lime: #bbff2e;
   --border: rgba(255, 255, 255, 0.1);
   --border-soft: rgba(255, 255, 255, 0.06);
   --w100: #ffffff;
@@ -84,7 +84,7 @@ button {
 .eyebrow .rule {
   height: 1px;
   width: 32px;
-  background: rgba(212, 255, 0, 0.5);
+  background: rgba(187, 255, 46, 0.5);
 }
 .eyebrow .label {
   font-family: var(--font-mono);
@@ -106,20 +106,20 @@ button {
 
 .hex-grid {
   background-image: linear-gradient(
-      rgba(212, 255, 0, 0.04) 1px,
+      rgba(187, 255, 46, 0.04) 1px,
       transparent 1px
     ),
-    linear-gradient(90deg, rgba(212, 255, 0, 0.04) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(187, 255, 46, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
 }
 .accent-line {
   background: linear-gradient(90deg, transparent, var(--lime), transparent);
 }
 .glow-accent {
-  box-shadow: 0 0 40px -10px rgba(212, 255, 0, 0.45);
+  box-shadow: 0 0 40px -10px rgba(187, 255, 46, 0.45);
 }
 .text-glow {
-  text-shadow: 0 0 24px rgba(212, 255, 0, 0.35);
+  text-shadow: 0 0 24px rgba(187, 255, 46, 0.35);
 }
 
 .btn-primary {
@@ -280,15 +280,15 @@ header.scrolled {
       90deg,
       transparent,
       transparent 14px,
-      rgba(212, 255, 0, 0.25) 14px,
-      rgba(212, 255, 0, 0.25) 15px
+      rgba(187, 255, 46, 0.25) 14px,
+      rgba(187, 255, 46, 0.25) 15px
     ),
     repeating-linear-gradient(
       0deg,
       transparent,
       transparent 14px,
-      rgba(212, 255, 0, 0.15) 14px,
-      rgba(212, 255, 0, 0.15) 15px
+      rgba(187, 255, 46, 0.15) 14px,
+      rgba(187, 255, 46, 0.15) 15px
     );
 }
 .mobile-menu-inner {
@@ -393,7 +393,7 @@ header.scrolled {
   top: 110px;
   right: 24px;
   font-size: 10px;
-  color: rgba(212, 255, 0, 0.7);
+  color: rgba(187, 255, 46, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.15em;
 }
@@ -616,7 +616,7 @@ header.scrolled {
 }
 .court-tab.active {
   border-color: var(--lime);
-  background: rgba(212, 255, 0, 0.1);
+  background: rgba(187, 255, 46, 0.1);
 }
 .court-tab:not(.active):hover {
   border-color: rgba(255, 255, 255, 0.3);
@@ -676,7 +676,7 @@ header.scrolled {
   color: var(--lime);
   background: rgba(7, 8, 7, 0.75);
   padding: 6px 12px;
-  border: 1px solid rgba(212, 255, 0, 0.3);
+  border: 1px solid rgba(187, 255, 46, 0.3);
 }
 .court-visual .caption {
   position: absolute;
@@ -794,7 +794,7 @@ header.scrolled {
   background: var(--bg-2);
 }
 .court-compare-cell.is-active {
-  background: rgba(212, 255, 0, 0.06);
+  background: rgba(187, 255, 46, 0.06);
   color: var(--w100);
 }
 .court-compare-row--head .court-compare-cell {
@@ -829,7 +829,7 @@ header.scrolled {
   color: var(--w100);
 }
 .court-compare-cell--head.is-active {
-  background: rgba(212, 255, 0, 0.1);
+  background: rgba(187, 255, 46, 0.1);
 }
 .court-compare-cell--head.is-active .code {
   color: var(--lime);
@@ -857,7 +857,7 @@ header.scrolled {
   overflow: hidden;
   background: radial-gradient(
       circle at 30% 30%,
-      rgba(212, 255, 0, 0.06),
+      rgba(187, 255, 46, 0.06),
       transparent 60%
     ),
     linear-gradient(160deg, #0d0f0d, #131612);
@@ -880,7 +880,7 @@ header.scrolled {
   color: var(--lime);
   background: rgba(7, 8, 7, 0.8);
   padding: 5px 9px;
-  border: 1px solid rgba(212, 255, 0, 0.4);
+  border: 1px solid rgba(187, 255, 46, 0.4);
 }
 .eng-copy p {
   font-size: 17px;
@@ -1503,7 +1503,7 @@ input[type="range"]::-moz-range-track {
 }
 .ct-opt.sel {
   border-color: var(--lime);
-  background: rgba(212, 255, 0, 0.1);
+  background: rgba(187, 255, 46, 0.1);
 }
 .ct-opt:not(.sel):hover {
   border-color: rgba(255, 255, 255, 0.3);
@@ -1602,7 +1602,7 @@ input[type="range"]::-moz-range-track {
 }
 .chip-opt.sel {
   border-color: var(--lime);
-  background: rgba(212, 255, 0, 0.1);
+  background: rgba(187, 255, 46, 0.1);
   color: var(--lime);
 }
 .form-grid2 {
@@ -1807,5 +1807,5 @@ footer {
   background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(212, 255, 0, 0.25);
+  background: rgba(187, 255, 46, 0.25);
 }

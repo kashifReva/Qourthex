@@ -260,9 +260,9 @@ export default function Engineering() {
                 <svg viewBox={`0 0 ${chart.w} 74`} fill="none">
                   <polygon points={chart.areaPts} fill={LIME_FILL} />
                   <polyline points={chart.ambientPts} fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.4" />
-                  <polyline points={chart.canopyPts} fill="none" stroke="#D4FF00" strokeWidth="1.6" />
+                  <polyline points={chart.canopyPts} fill="none" stroke="#bbff2e" strokeWidth="1.6" />
                   {dayCurve.map((d, i) => (
-                    <circle key={i} cx={chart.x(i)} cy={chart.y(d.canopy)} r="2" fill="#D4FF00" />
+                    <circle key={i} cx={chart.x(i)} cy={chart.y(d.canopy)} r="2" fill="#bbff2e" />
                   ))}
                 </svg>
                 <div className="eng-chart-axis mono">
@@ -279,4 +279,4 @@ export default function Engineering() {
   );
 }
 
-const LIME_FILL = "rgba(212,255,0,0.08)";
+const LIME_FILL = "rgba(187,255,46,0.08)";
