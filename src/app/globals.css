@@ -1818,20 +1818,12 @@ footer {
   background: transparent;
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
-.foot-social a.instagram {
-  color: #e1306c;
-}
-.foot-social a.facebook {
-  color: #1877f2;
-}
-.foot-social a.tiktok {
-  color: #25f4ee;
-}
-.foot-social a.linkedin {
-  color: #0a66c2;
-}
+.foot-social a.instagram,
+.foot-social a.facebook,
+.foot-social a.tiktok,
+.foot-social a.linkedin,
 .foot-social a.whatsapp {
-  color: #25d366;
+  color: #6d840a;
 }
 .foot-social a:hover {
   color: var(--w100);
