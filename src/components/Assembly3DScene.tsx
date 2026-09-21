@@ -73,11 +73,24 @@ function usePadelBallTexture() {
 
 type Part = { group: THREE.Group | null };
 
+// Court footprint corners (x, z) — posts, walls, turf and roof all share
+// these so nothing can drift apart the way the old hard-coded wall
+// transforms did.
+const CORNERS = {
+  fl: [-1.8, -1] as [number, number],
+  fr: [1.8, -1] as [number, number],
+  bl: [-1.8, 1] as [number, number],
+  br: [1.8, 1] as [number, number],
+};
+const WALL_HEIGHT = 1.3;
+const POST_HEIGHT = 2.7; // half (1.35) is the visible height above ground
+const ROOF_Y = POST_HEIGHT / 2 + 0.05;
+
 function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
   useFrame(({ camera }) => {
     const p = progressRef.current;
-    camera.position.set(lerp(4.6, 3.4, p), lerp(3.6, 2.9, p), lerp(5.4, 4.2, p));
-    camera.lookAt(0, 0, 0);
+    camera.position.set(lerp(5.2, 4.0, p), lerp(4.2, 3.5, p), lerp(6.0, 4.8, p));
+    camera.lookAt(0, 0.55, 0);
   });
   return null;
 }
@@ -87,10 +100,10 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
   // corner target positions (x, z) and scattered origin per post
   const corners = useMemo(
     () => [
-      { target: [-1.8, 0, -1] as [number, number, number], from: [-3.6, 1.2, -2.6] as [number, number, number], rot: -0.9 },
-      { target: [1.8, 0, -1] as [number, number, number], from: [3.8, 1.4, -2.8] as [number, number, number], rot: 0.8 },
-      { target: [-1.8, 0, 1] as [number, number, number], from: [-4.0, 1.6, 2.6] as [number, number, number], rot: 0.7 },
-      { target: [1.8, 0, 1] as [number, number, number], from: [4.2, 1.1, 2.4] as [number, number, number], rot: -0.75 },
+      { target: [CORNERS.fl[0], 0, CORNERS.fl[1]] as [number, number, number], from: [-4.4, 1.6, -3.2] as [number, number, number], rot: -0.9 },
+      { target: [CORNERS.fr[0], 0, CORNERS.fr[1]] as [number, number, number], from: [4.6, 1.8, -3.4] as [number, number, number], rot: 0.8 },
+      { target: [CORNERS.bl[0], 0, CORNERS.bl[1]] as [number, number, number], from: [-4.8, 2.0, 3.2] as [number, number, number], rot: 0.7 },
+      { target: [CORNERS.br[0], 0, CORNERS.br[1]] as [number, number, number], from: [5.0, 1.4, 3.0] as [number, number, number], rot: -0.75 },
     ],
     []
   );
@@ -114,10 +127,10 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
       {corners.map((_, i) => (
         <group key={i} ref={(el) => { refs.current[i] = el; }}>
           <mesh>
-            <cylinderGeometry args={[0.045, 0.045, 1.4, 16]} />
+            <cylinderGeometry args={[0.045, 0.045, POST_HEIGHT, 16]} />
             <meshStandardMaterial color={LIME} transparent opacity={0.25} roughness={0.3} metalness={0.6} />
           </mesh>
-          <mesh position={[0, 0.74, 0]} rotation={[0, Math.PI / 6, 0]}>
+          <mesh position={[0, POST_HEIGHT / 2 + 0.03, 0]} rotation={[0, Math.PI / 6, 0]}>
             <cylinderGeometry args={[0.11, 0.13, 0.06, 6]} />
             <meshStandardMaterial
               color={LIME}
@@ -135,59 +148,126 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
   );
 }
 
-function GlassPanels({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const leftRef = useRef<THREE.Group>(null);
-  const rightRef = useRef<THREE.Group>(null);
+// A single wall panel spanning two real court corners, so it always sits
+// flush with the floor edge and the corner posts instead of a hand-tuned
+// position/rotation that can drift apart from the rest of the geometry.
+function Wall({
+  progressRef,
+  a,
+  b,
+  inStart,
+  inEnd,
+  outward,
+  fromAngleDelta,
+}: {
+  progressRef: React.RefObject<number>;
+  a: [number, number];
+  b: [number, number];
+  inStart: number;
+  inEnd: number;
+  outward: number;
+  fromAngleDelta: number;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  const { midX, midZ, width, angle, fromX, fromZ } = useMemo(() => {
+    const dx = b[0] - a[0];
+    const dz = b[1] - a[1];
+    const width = Math.hypot(dx, dz);
+    const midX = (a[0] + b[0]) / 2;
+    const midZ = (a[1] + b[1]) / 2;
+    const angle = Math.atan2(-dz, dx);
+    const nLen = Math.hypot(dz, -dx) || 1;
+    const nx = dz / nLen;
+    const nz = -dx / nLen;
+    return { midX, midZ, width, angle, fromX: midX + nx * outward, fromZ: midZ + nz * outward };
+  }, [a, b, outward]);
 
   useFrame(() => {
-    const p = seg(progressRef.current, 0.28, 0.55);
-    if (leftRef.current) {
-      leftRef.current.position.set(lerp(-4.5, -1.8, p), 0.7, lerp(-0.4, 0, p));
-      leftRef.current.rotation.y = lerp(-0.6, 0, p);
-      const fillMat = (leftRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      fillMat.opacity = lerp(0, 0.4, p);
-      const edgeMat = (leftRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
-      edgeMat.opacity = lerp(0, 0.85, p);
-    }
-    if (rightRef.current) {
-      rightRef.current.position.set(lerp(4.5, 1.8, p), 0.7, lerp(0.4, 0, p));
-      rightRef.current.rotation.y = lerp(0.6, 0, p);
-      const fillMat = (rightRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      fillMat.opacity = lerp(0, 0.4, p);
-      const edgeMat = (rightRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
-      edgeMat.opacity = lerp(0, 0.85, p);
-    }
+    const p = seg(progressRef.current, inStart, inEnd);
+    if (!groupRef.current) return;
+    groupRef.current.position.set(lerp(fromX, midX, p), WALL_HEIGHT / 2, lerp(fromZ, midZ, p));
+    groupRef.current.rotation.y = lerp(angle + fromAngleDelta, angle, p);
+    const fillMat = (groupRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
+    fillMat.opacity = lerp(0, 0.4, p);
+    const edgeMat = (groupRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
+    edgeMat.opacity = lerp(0, 0.85, p);
   });
 
   return (
+    <group ref={groupRef}>
+      <mesh>
+        <planeGeometry args={[width, WALL_HEIGHT]} />
+        <meshStandardMaterial color="#8fb400" transparent opacity={0} roughness={0.15} metalness={0.2} side={THREE.DoubleSide} />
+      </mesh>
+      <lineSegments>
+        <edgesGeometry args={[new THREE.PlaneGeometry(width, WALL_HEIGHT)]} />
+        <lineBasicMaterial color={LIME} transparent opacity={0} />
+      </lineSegments>
+    </group>
+  );
+}
+
+function GlassPanels({ progressRef }: { progressRef: React.RefObject<number> }) {
+  return (
     <>
-      <group ref={leftRef}>
-        <mesh>
-          <planeGeometry args={[2.2, 1.4, 1, 1]} />
-          <meshStandardMaterial color="#8fb400" transparent opacity={0} roughness={0.15} metalness={0.2} side={THREE.DoubleSide} />
-        </mesh>
-        <lineSegments>
-          <edgesGeometry args={[new THREE.PlaneGeometry(2.2, 1.4)]} />
-          <lineBasicMaterial color={LIME} transparent opacity={0} />
-        </lineSegments>
-      </group>
-      <group ref={rightRef}>
-        <mesh>
-          <planeGeometry args={[2.2, 1.4, 1, 1]} />
-          <meshStandardMaterial color="#8fb400" transparent opacity={0} roughness={0.15} metalness={0.2} side={THREE.DoubleSide} />
-        </mesh>
-        <lineSegments>
-          <edgesGeometry args={[new THREE.PlaneGeometry(2.2, 1.4)]} />
-          <lineBasicMaterial color={LIME} transparent opacity={0} />
-        </lineSegments>
-      </group>
+      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.bl} inStart={0.28} inEnd={0.55} outward={2.6} fromAngleDelta={-0.6} />
+      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.fr} inStart={0.32} inEnd={0.58} outward={2.6} fromAngleDelta={0.6} />
     </>
+  );
+}
+
+// A light mesh/truss roof over the whole footprint — translucent so the
+// court underneath stays visible, with a couple of cross-braces so it
+// reads as a structure rather than a flat lid.
+function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
+  const fillRef = useRef<THREE.Mesh>(null);
+  const edgeRef = useRef<THREE.LineSegments>(null);
+  const braceRef = useRef<THREE.LineSegments>(null);
+  const w = CORNERS.fr[0] - CORNERS.fl[0];
+  const d = CORNERS.bl[1] - CORNERS.fl[1];
+
+  const braceGeometry = useMemo(() => {
+    const geom = new THREE.BufferGeometry();
+    const pts = new Float32Array([
+      -w / 2, 0, -d / 2, w / 2, 0, d / 2,
+      w / 2, 0, -d / 2, -w / 2, 0, d / 2,
+      0, 0, -d / 2, 0, 0, d / 2,
+      -w / 2, 0, 0, w / 2, 0, 0,
+    ]);
+    geom.setAttribute("position", new THREE.BufferAttribute(pts, 3));
+    return geom;
+  }, [w, d]);
+
+  useFrame(() => {
+    const p = seg(progressRef.current, 0.45, 0.75);
+    if (fillRef.current) (fillRef.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.14, p);
+    if (edgeRef.current) (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.6, p);
+    if (braceRef.current) (braceRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.4, p);
+  });
+
+  return (
+    <group position={[(CORNERS.fl[0] + CORNERS.fr[0]) / 2, ROOF_Y, (CORNERS.fl[1] + CORNERS.bl[1]) / 2]}>
+      <mesh ref={fillRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[w, d]} />
+        <meshStandardMaterial color={LIME} transparent opacity={0} roughness={0.2} metalness={0.1} side={THREE.DoubleSide} />
+      </mesh>
+      <lineSegments ref={edgeRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <edgesGeometry args={[new THREE.PlaneGeometry(w, d)]} />
+        <lineBasicMaterial color={LIME} transparent opacity={0} />
+      </lineSegments>
+      <lineSegments ref={braceRef} geometry={braceGeometry}>
+        <lineBasicMaterial color={LIME} transparent opacity={0} />
+      </lineSegments>
+    </group>
   );
 }
 
 function Turf({ progressRef }: { progressRef: React.RefObject<number> }) {
   const texture = useTurfTexture();
   const meshRef = useRef<THREE.Mesh>(null);
+  const w = CORNERS.fr[0] - CORNERS.fl[0];
+  const d = CORNERS.bl[1] - CORNERS.fl[1];
 
   useFrame(() => {
     const p = seg(progressRef.current, 0, 0.5);
@@ -197,7 +277,7 @@ function Turf({ progressRef }: { progressRef: React.RefObject<number> }) {
 
   return (
     <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
-      <planeGeometry args={[3.6, 2.2]} />
+      <planeGeometry args={[w, d]} />
       <meshStandardMaterial map={texture} transparent opacity={0.08} roughness={1} />
     </mesh>
   );
@@ -286,6 +366,7 @@ function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
         <Turf progressRef={progressRef} />
         <Posts progressRef={progressRef} />
         <GlassPanels progressRef={progressRef} />
+        <Roof progressRef={progressRef} />
         <Net progressRef={progressRef} />
         <Balls progressRef={progressRef} />
       </Spinner>
@@ -308,7 +389,7 @@ export default function Assembly3DScene({
   return (
     <Canvas
       dpr={[1, 1.75]}
-      camera={{ position: [4.6, 3.6, 5.4], fov: 34 }}
+      camera={{ position: [5.2, 4.2, 6.0], fov: 36 }}
       gl={{ antialias: true, alpha: true }}
       style={{ width: "100%", height: "100%" }}
     >

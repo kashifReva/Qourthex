@@ -44,7 +44,7 @@ export default function CourtIllustration({ variant }: { variant: Variant }) {
   const gid = `g-${variant}`;
 
   return (
-    <svg viewBox="0 0 240 180" fill="none">
+    <svg viewBox="-55 -8 300 200" fill="none">
       <defs>
         <linearGradient id={`${gid}-glass`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#D4FF00" stopOpacity="0.22" />
@@ -137,6 +137,29 @@ export default function CourtIllustration({ variant }: { variant: Variant }) {
       {variant === "panoramic" && (
         <line x1={fl[0]} y1={fl[1] - 56} x2={fr[0]} y2={fr[1] - 56} stroke="#D4FF00" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3" />
       )}
+
+      {/* dimension callouts, blueprint-style, so the drawing reads as a spec */}
+      <g fontFamily="ui-monospace, 'JetBrains Mono', monospace" fill="#D4FF00" fillOpacity="0.55">
+        <line x1={fl[0]} y1={fl[1] + 4} x2={fl[0]} y2={fl[1] + 14} stroke="#D4FF00" strokeOpacity="0.4" strokeWidth="0.75" />
+        <line x1={fr[0]} y1={fr[1] + 4} x2={fr[0]} y2={fr[1] + 14} stroke="#D4FF00" strokeOpacity="0.4" strokeWidth="0.75" />
+        <line x1={fl[0]} y1={fl[1] + 10} x2={fr[0]} y2={fr[1] + 10} stroke="#D4FF00" strokeOpacity="0.4" strokeWidth="0.75" />
+        <text x={(fl[0] + fr[0]) / 2} y={fl[1] + 22} textAnchor="middle" fontSize="7" letterSpacing="0.5">
+          20M COURT LENGTH
+        </text>
+
+        <line
+          x1={(fl[0] + bl[0]) / 2}
+          y1={(fl[1] + bl[1]) / 2}
+          x2={(fl[0] + bl[0]) / 2 - 20}
+          y2={(fl[1] + bl[1]) / 2 - 8}
+          stroke="#D4FF00"
+          strokeOpacity="0.4"
+          strokeWidth="0.75"
+        />
+        <text x={(fl[0] + bl[0]) / 2 - 22} y={(fl[1] + bl[1]) / 2 - 10} textAnchor="end" fontSize="7" letterSpacing="0.5">
+          10M WIDTH
+        </text>
+      </g>
     </svg>
   );
 }
