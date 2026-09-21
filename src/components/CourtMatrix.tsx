@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Reveal from "./Reveal";
 import CourtIllustration from "./CourtIllustration";
@@ -12,6 +13,7 @@ const COURTS = [
     tagline: "Immersive spectator visibility",
     desc: "A premium panoramic court engineered for strong wind loads and sideline visibility, built for an elevated player and spectator experience.",
     footprint: "20 × 10m",
+    photo: null as string | null,
     specs: [
       ["Glass", "12mm Tempered"],
       ["Wind Load", "Reinforced"],
@@ -27,6 +29,7 @@ const COURTS = [
     tagline: "Robust, wind-ready, durable",
     desc: "A robust, wind-ready court system for indoor or outdoor venues, featuring reinforced structure, tempered glass panels, and consistent play over the long term.",
     footprint: "20 × 10m",
+    photo: "/images/courts/standard.png" as string | null,
     specs: [
       ["Glass", "Tempered Panels"],
       ["Wind Load", "Wind-Ready"],
@@ -42,6 +45,7 @@ const COURTS = [
     tagline: "Modular. Quick-install. Relocatable.",
     desc: "A modular, quick-install court for maximum flexibility, easy to relocate and adapt to different venue sizes, built on a robust steel frame with interlocking joints for stable, consistent play.",
     footprint: "20 × 10m",
+    photo: null as string | null,
     specs: [
       ["Install", "Quick Modular"],
       ["Frame", "Interlocking Steel"],
@@ -162,7 +166,11 @@ export default function CourtMatrix() {
 
         <Reveal className="court-display" id="courtDisplay">
           <div className="court-visual">
-            <CourtIllustration variant={c.id as "panoramic" | "standard" | "portable"} />
+            {c.photo ? (
+              <Image src={c.photo} alt={c.name} fill sizes="(min-width: 900px) 50vw, 100vw" className="court-visual-photo" priority={active === 0} />
+            ) : (
+              <CourtIllustration variant={c.id as "panoramic" | "standard" | "portable"} />
+            )}
             <div className="chip mono">{c.code} / SPEC SHEET</div>
             <div className="caption mono">Blue hour &middot; Doha &middot; {c.name}</div>
           </div>

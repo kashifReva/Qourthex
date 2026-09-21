@@ -8,10 +8,30 @@ import StaticAssemblyDiagram from "./StaticAssemblyDiagram";
 const Assembly3DScene = dynamic(() => import("./Assembly3DScene"), { ssr: false });
 
 const STAGE_CARDS = [
-  { n: "Stage 01", h: "Components scattered", p: "Hex glass panels, turf modules, and padel balls drift in the build space." },
-  { n: "Stage 02", h: "The frame aligns", p: "Galvanized steel joints lock into position, mapping the 20 × 10 metre footprint." },
-  { n: "Stage 03", h: "Glass walls rise", p: "12mm tempered panels lift into place, reinforced for Qatar's wind loads." },
-  { n: "Stage 04", h: "The court appears", p: "Net tensioned. Turf laid. Lighting calibrated. Ready to play." },
+  {
+    n: "Stage 01",
+    tag: "Frame",
+    h: "The frame aligns",
+    p: "Galvanized steel joints lock into position, mapping the 20 × 10 metre footprint.",
+  },
+  {
+    n: "Stage 02",
+    tag: "Walls",
+    h: "Glass walls rise",
+    p: "12mm tempered panels lift into place, reinforced for Qatar's wind loads.",
+  },
+  {
+    n: "Stage 03",
+    tag: "Roof",
+    h: "The roof locks in",
+    p: "Cross-braced steel roofing spans the frame, engineered for sun, wind, and Doha summers.",
+  },
+  {
+    n: "Stage 04",
+    tag: "Court",
+    h: "The court appears",
+    p: "Net tensioned. Turf laid. Lighting calibrated. Ready to play.",
+  },
 ];
 
 export default function Assembly() {
@@ -91,20 +111,33 @@ export default function Assembly() {
 
       <div className="assembly-scroll" id="assemblyScroll" ref={scrollWrapRef}>
         <div className="assembly-pin">
-          <div className="wrap assembly-inner">
-            <div className="assembly-visual" id="assemblyVisual" data-stage={stage}>
-              {enabled3D ? (
-                <Assembly3DScene progressRef={progressRef} reduceMotion={reduceMotion} />
-              ) : (
-                <StaticAssemblyDiagram />
-              )}
+          <div className="assembly-stagetag mono">
+            <span className="assembly-stagetag-n">{STAGE_CARDS[stage].n}</span>
+            <span className="assembly-stagetag-rule"></span>
+            <span className="assembly-stagetag-label">{STAGE_CARDS[stage].tag}</span>
+          </div>
+
+          <div className="assembly-visual-full" id="assemblyVisual" data-stage={stage}>
+            {enabled3D ? (
+              <Assembly3DScene progressRef={progressRef} reduceMotion={reduceMotion} />
+            ) : (
+              <StaticAssemblyDiagram />
+            )}
+          </div>
+
+          <div className="wrap assembly-bottom">
+            <div className="assembly-bars" id="assemblyBars">
+              {STAGE_CARDS.map((card, i) => (
+                <div key={i} className={`assembly-bar-row${i <= stage ? " is-active" : ""}`} data-bar={i}>
+                  <span className="assembly-bar-track">
+                    <span className="assembly-bar-fill"></span>
+                  </span>
+                  <span className="assembly-bar-label mono">{card.tag}</span>
+                </div>
+              ))}
             </div>
-            <div className="assembly-copy">
-              <div className="assembly-progress" id="assemblyDots">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className={`assembly-dot${i <= stage ? " is-active" : ""}`} data-dot={i}></div>
-                ))}
-              </div>
+
+            <div className="assembly-stagecopy">
               {STAGE_CARDS.map((card, i) => (
                 <div key={i} className={`assembly-stage-card${i === stage ? " is-active" : ""}`} data-card={i}>
                   <div className="n mono">{card.n}</div>

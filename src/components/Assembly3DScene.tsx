@@ -109,7 +109,7 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
   );
 
   useFrame(() => {
-    const p = seg(progressRef.current, 0, 0.32);
+    const p = seg(progressRef.current, 0, 0.24);
     corners.forEach((c, i) => {
       const g = refs.current[i];
       if (!g) return;
@@ -211,8 +211,8 @@ function Wall({
 function GlassPanels({ progressRef }: { progressRef: React.RefObject<number> }) {
   return (
     <>
-      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.bl} inStart={0.28} inEnd={0.55} outward={2.6} fromAngleDelta={-0.6} />
-      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.fr} inStart={0.32} inEnd={0.58} outward={2.6} fromAngleDelta={0.6} />
+      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.bl} inStart={0.25} inEnd={0.46} outward={2.6} fromAngleDelta={-0.6} />
+      <Wall progressRef={progressRef} a={CORNERS.fl} b={CORNERS.fr} inStart={0.29} inEnd={0.5} outward={2.6} fromAngleDelta={0.6} />
     </>
   );
 }
@@ -240,7 +240,7 @@ function Roof({ progressRef }: { progressRef: React.RefObject<number> }) {
   }, [w, d]);
 
   useFrame(() => {
-    const p = seg(progressRef.current, 0.45, 0.75);
+    const p = seg(progressRef.current, 0.5, 0.72);
     if (fillRef.current) (fillRef.current.material as THREE.MeshStandardMaterial).opacity = lerp(0, 0.14, p);
     if (edgeRef.current) (edgeRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.6, p);
     if (braceRef.current) (braceRef.current.material as THREE.LineBasicMaterial).opacity = lerp(0, 0.4, p);
@@ -287,7 +287,7 @@ function Net({ progressRef }: { progressRef: React.RefObject<number> }) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
-    const p = seg(progressRef.current, 0.5, 0.78);
+    const p = seg(progressRef.current, 0.76, 0.94);
     if (groupRef.current) {
       groupRef.current.scale.y = Math.max(0.001, p);
       const mesh = groupRef.current.children[0] as THREE.Mesh;

@@ -664,6 +664,9 @@ header.scrolled {
   height: auto;
   opacity: 0.95;
 }
+.court-visual-photo {
+  object-fit: cover;
+}
 .court-visual .chip {
   position: absolute;
   top: 16px;
@@ -1010,62 +1013,142 @@ input[type="range"] {
     top: 0;
     height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
-  }
-}
-.assembly-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  width: 100%;
-  padding: 56px 0;
-}
-@media (min-width: 901px) {
-  .assembly-inner {
-    flex-direction: row;
-    align-items: center;
-    gap: 72px;
-    padding: 0;
+    justify-content: center;
+    gap: 28px;
+    padding: 48px 0 40px;
   }
 }
 
-.assembly-visual {
+/* small live tag above the model naming the current build stage */
+.assembly-stagetag {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--w55);
+}
+.assembly-stagetag-n {
+  color: var(--lime);
+}
+.assembly-stagetag-rule {
+  width: 32px;
+  height: 1px;
+  background: var(--border);
+}
+.assembly-stagetag-label {
+  color: #fff;
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .assembly-stagetag {
+    padding: 0 20px;
+  }
+}
+
+/* full-bleed, centered 3D model — the visual is the hero of this section */
+.assembly-visual-full {
   position: relative;
-  flex: 1 1 50%;
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 340px;
-  height: 420px;
   overflow: hidden;
 }
-.assembly-visual canvas {
+.assembly-visual-full canvas {
   outline: none;
 }
-.assembly-visual svg {
+.assembly-visual-full svg {
   width: 100%;
-  max-width: 420px;
+  max-width: 460px;
   height: auto;
   overflow: visible;
 }
+@media (min-width: 901px) {
+  .assembly-visual-full {
+    max-height: 58vh;
+  }
+}
+@media (max-width: 900px) {
+  .assembly-visual-full {
+    height: 340px;
+    min-height: 340px;
+    flex: none;
+  }
+}
 
-.assembly-copy {
-  flex: 1 1 40%;
-  max-width: 440px;
-}
-.assembly-progress {
+/* everything else — bars + stage copy — sits under the model */
+.assembly-bottom {
+  width: 100%;
   display: flex;
-  gap: 8px;
-  margin-bottom: 28px;
+  flex-direction: column;
+  gap: 24px;
 }
-.assembly-dot {
-  width: 32px;
+@media (min-width: 901px) {
+  .assembly-bottom {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 56px;
+  }
+}
+
+.assembly-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1 1 320px;
+  max-width: 380px;
+}
+.assembly-bar-row {
+  display: grid;
+  grid-template-columns: 1fr 68px;
+  align-items: center;
+  gap: 14px;
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+.assembly-bar-row.is-active {
+  opacity: 1;
+}
+.assembly-bar-track {
+  position: relative;
+  display: block;
   height: 3px;
   background: var(--border);
-  transition: background 0.3s ease;
+  overflow: hidden;
 }
-.assembly-dot.is-active {
+.assembly-bar-fill {
+  position: absolute;
+  inset: 0;
+  width: 0%;
   background: var(--lime);
+  transition: width 0.6s ease;
+}
+.assembly-bar-row.is-active .assembly-bar-fill {
+  width: 100%;
+}
+.assembly-bar-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--w55);
+  text-align: right;
+  transition: color 0.3s ease;
+}
+.assembly-bar-row.is-active .assembly-bar-label {
+  color: var(--lime);
+}
+
+.assembly-stagecopy {
+  position: relative;
+  flex: 1 1 380px;
+  max-width: 440px;
+  min-height: 96px;
 }
 .assembly-stage-card {
   display: none;
@@ -1077,12 +1160,12 @@ input[type="range"] {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--lime);
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   letter-spacing: 0.08em;
 }
 .assembly-stage-card h4 {
-  font-size: 26px;
-  margin-bottom: 12px;
+  font-size: 24px;
+  margin-bottom: 10px;
 }
 .assembly-stage-card p {
   font-size: 14.5px;
@@ -1090,13 +1173,17 @@ input[type="range"] {
   line-height: 1.7;
   max-width: 400px;
 }
+
 @media (max-width: 900px) {
+  .assembly-bottom {
+    padding-bottom: 40px;
+  }
+  .assembly-bars {
+    display: none;
+  }
   .assembly-stage-card {
     display: block !important;
-    margin-bottom: 24px;
-  }
-  .assembly-progress {
-    display: none;
+    margin-bottom: 0;
   }
 }
 
