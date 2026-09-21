@@ -102,8 +102,10 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
       if (!g) return;
       g.position.set(lerp(c.from[0], c.target[0], p), lerp(c.from[1], c.target[1], p), lerp(c.from[2], c.target[2], p));
       g.rotation.z = lerp(c.rot, 0, p);
-      const mat = (g.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
-      if (mat) mat.opacity = lerp(0.25, 1, p);
+      const postMat = (g.children[0] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
+      if (postMat) postMat.opacity = lerp(0.25, 1, p);
+      const capMat = (g.children[1] as THREE.Mesh)?.material as THREE.MeshStandardMaterial;
+      if (capMat) capMat.opacity = lerp(0.2, 0.95, p);
     });
   });
 
@@ -112,8 +114,20 @@ function Posts({ progressRef }: { progressRef: React.RefObject<number> }) {
       {corners.map((_, i) => (
         <group key={i} ref={(el) => { refs.current[i] = el; }}>
           <mesh>
-            <cylinderGeometry args={[0.035, 0.035, 1.4, 12]} />
-            <meshStandardMaterial color={LIME} transparent opacity={0.25} roughness={0.4} metalness={0.4} />
+            <cylinderGeometry args={[0.045, 0.045, 1.4, 16]} />
+            <meshStandardMaterial color={LIME} transparent opacity={0.25} roughness={0.3} metalness={0.6} />
+          </mesh>
+          <mesh position={[0, 0.74, 0]} rotation={[0, Math.PI / 6, 0]}>
+            <cylinderGeometry args={[0.11, 0.13, 0.06, 6]} />
+            <meshStandardMaterial
+              color={LIME}
+              transparent
+              opacity={0.2}
+              roughness={0.25}
+              metalness={0.5}
+              emissive={LIME}
+              emissiveIntensity={0.35}
+            />
           </mesh>
         </group>
       ))}
@@ -130,14 +144,18 @@ function GlassPanels({ progressRef }: { progressRef: React.RefObject<number> }) 
     if (leftRef.current) {
       leftRef.current.position.set(lerp(-4.5, -1.8, p), 0.7, lerp(-0.4, 0, p));
       leftRef.current.rotation.y = lerp(-0.6, 0, p);
-      const mat = (leftRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      mat.opacity = lerp(0, 0.22, p);
+      const fillMat = (leftRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
+      fillMat.opacity = lerp(0, 0.4, p);
+      const edgeMat = (leftRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
+      edgeMat.opacity = lerp(0, 0.85, p);
     }
     if (rightRef.current) {
       rightRef.current.position.set(lerp(4.5, 1.8, p), 0.7, lerp(0.4, 0, p));
       rightRef.current.rotation.y = lerp(0.6, 0, p);
-      const mat = (rightRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
-      mat.opacity = lerp(0, 0.22, p);
+      const fillMat = (rightRef.current.children[0] as THREE.Mesh).material as THREE.MeshStandardMaterial;
+      fillMat.opacity = lerp(0, 0.4, p);
+      const edgeMat = (rightRef.current.children[1] as THREE.LineSegments).material as THREE.LineBasicMaterial;
+      edgeMat.opacity = lerp(0, 0.85, p);
     }
   });
 
@@ -145,22 +163,22 @@ function GlassPanels({ progressRef }: { progressRef: React.RefObject<number> }) 
     <>
       <group ref={leftRef}>
         <mesh>
-          <planeGeometry args={[0.02, 1.4, 1, 1]} />
-          <meshStandardMaterial color={LIME} transparent opacity={0} roughness={0.1} metalness={0.1} side={THREE.DoubleSide} />
+          <planeGeometry args={[2.2, 1.4, 1, 1]} />
+          <meshStandardMaterial color="#8fb400" transparent opacity={0} roughness={0.15} metalness={0.2} side={THREE.DoubleSide} />
         </mesh>
         <lineSegments>
           <edgesGeometry args={[new THREE.PlaneGeometry(2.2, 1.4)]} />
-          <lineBasicMaterial color={LIME} transparent opacity={0.55} />
+          <lineBasicMaterial color={LIME} transparent opacity={0} />
         </lineSegments>
       </group>
       <group ref={rightRef}>
         <mesh>
-          <planeGeometry args={[0.02, 1.4, 1, 1]} />
-          <meshStandardMaterial color={LIME} transparent opacity={0} roughness={0.1} metalness={0.1} side={THREE.DoubleSide} />
+          <planeGeometry args={[2.2, 1.4, 1, 1]} />
+          <meshStandardMaterial color="#8fb400" transparent opacity={0} roughness={0.15} metalness={0.2} side={THREE.DoubleSide} />
         </mesh>
         <lineSegments>
           <edgesGeometry args={[new THREE.PlaneGeometry(2.2, 1.4)]} />
-          <lineBasicMaterial color={LIME} transparent opacity={0.55} />
+          <lineBasicMaterial color={LIME} transparent opacity={0} />
         </lineSegments>
       </group>
     </>
@@ -244,17 +262,33 @@ function Balls({ progressRef }: { progressRef: React.RefObject<number> }) {
   );
 }
 
+// Once the court is mostly assembled, let the whole model turn slowly like a
+// product turntable — the "showcase" moment after the build sequence.
+function Spinner({ progressRef, children }: { progressRef: React.RefObject<number>; children: React.ReactNode }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!groupRef.current) return;
+    const spinFactor = seg(progressRef.current, 0.72, 1);
+    groupRef.current.rotation.y = state.clock.elapsedTime * 0.22 * spinFactor;
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+}
+
 function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
   return (
     <>
       <ambientLight intensity={0.6} />
       <directionalLight position={[3, 5, 2]} intensity={1.1} />
       <pointLight position={[-2, 1, -2]} intensity={0.5} color={LIME} />
-      <Turf progressRef={progressRef} />
-      <Posts progressRef={progressRef} />
-      <GlassPanels progressRef={progressRef} />
-      <Net progressRef={progressRef} />
-      <Balls progressRef={progressRef} />
+      <Spinner progressRef={progressRef}>
+        <Turf progressRef={progressRef} />
+        <Posts progressRef={progressRef} />
+        <GlassPanels progressRef={progressRef} />
+        <Net progressRef={progressRef} />
+        <Balls progressRef={progressRef} />
+      </Spinner>
       <Rig progressRef={progressRef} />
     </>
   );
