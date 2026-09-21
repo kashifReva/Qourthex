@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
 
@@ -274,9 +273,6 @@ function Scene({ progressRef }: { progressRef: React.RefObject<number> }) {
         </Spinner>
       </group>
       <Rig progressRef={progressRef} />
-      <EffectComposer multisampling={0}>
-        <Bloom luminanceThreshold={0.3} luminanceSmoothing={0.3} intensity={0.6} mipmapBlur radius={0.6} />
-      </EffectComposer>
     </>
   );
 }
