@@ -1,5 +1,6 @@
 import Image from "next/image";
 import FooterNavButton from "./FooterNavButton";
+import { withBasePath } from "@/lib/assetPath";
 
 const NAV = [
   { href: "#about", label: "About" },
@@ -18,7 +19,7 @@ export default function Footer() {
       <div className="wrap" style={{ position: "relative" }}>
         <div className="foot-grid">
           <div className="foot-brand-col">
-            <Image src="/logo-lime.png" alt="Qourt Hex" height={34} width={170} style={{ height: 34, width: "auto" }} />
+            <Image src={withBasePath("/logo-lime.png")} alt="Qourt Hex" height={34} width={170} style={{ height: 34, width: "auto" }} />
             <p>
               Padel &amp; tennis engineering for Qatar. We design, build, and maintain premium courts that perform every day,
               built for performance, designed for community.

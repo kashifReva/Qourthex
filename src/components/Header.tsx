@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { goTo } from "@/lib/scroll";
+import { withBasePath } from "@/lib/assetPath";
 
 const NAV_LINKS = [
   { href: "#home", label: "Home" },
@@ -40,7 +41,7 @@ export default function Header() {
       <header id="siteHeader" className={scrolled ? "scrolled" : ""}>
         <div className="nav-inner">
           <button className="nav-logo" onClick={() => navigate("#home")}>
-            <Image src="/logo-lime.png" alt="Qourt Hex" height={28} width={140} style={{ height: 28, width: "auto" }} priority />
+            <Image src={withBasePath("/logo-lime.png")} alt="Qourt Hex" height={28} width={140} style={{ height: 28, width: "auto" }} priority />
           </button>
           <nav className="nav-links">
             {NAV_LINKS.map((l) => (

@@ -3,15 +3,16 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Reveal from "./Reveal";
+import { withBasePath } from "@/lib/assetPath";
 
 const GALLERY_IMAGES = [
-  { src: "/gallery/gallery-01.jpg", alt: "Rooftop court under open sky" },
-  { src: "/gallery/gallery-02.jpg", alt: "Elevated court with skyline backdrop" },
-  { src: "/gallery/gallery-03.jpg", alt: "Close detail of rackets at the net" },
-  { src: "/gallery/gallery-04.jpg", alt: "Court net and ball, low light" },
-  { src: "/gallery/gallery-05.jpg", alt: "Indoor court mid-play" },
-  { src: "/gallery/gallery-06.jpg", alt: "Court corridor with ambient lighting" },
-  { src: "/gallery/gallery-07.jpg", alt: "Indoor court lounge and seating" },
+  { src: withBasePath("/gallery/gallery-01.jpg"), alt: "Rooftop court under open sky" },
+  { src: withBasePath("/gallery/gallery-02.jpg"), alt: "Elevated court with skyline backdrop" },
+  { src: withBasePath("/gallery/gallery-03.jpg"), alt: "Close detail of rackets at the net" },
+  { src: withBasePath("/gallery/gallery-04.jpg"), alt: "Court net and ball, low light" },
+  { src: withBasePath("/gallery/gallery-05.jpg"), alt: "Indoor court mid-play" },
+  { src: withBasePath("/gallery/gallery-06.jpg"), alt: "Court corridor with ambient lighting" },
+  { src: withBasePath("/gallery/gallery-07.jpg"), alt: "Indoor court lounge and seating" },
 ] as const;
 
 export default function Gallery() {

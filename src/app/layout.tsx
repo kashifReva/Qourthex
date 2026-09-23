@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { withBasePath } from "@/lib/assetPath";
 
 // Oswald — the condensed, bold-cut display face behind most sports/athletic
 // branding (scoreboards, league sites, jersey numerals). Swapped in as the
@@ -41,8 +42,8 @@ export const metadata: Metadata = {
   description:
     "Qourt Hex — Padel & Tennis Engineering in Qatar. We design, engineer, and maintain premium padel and tennis courts built for Qatar's conditions and delivered to premium standards.",
   icons: {
-    icon: "/favicon.png",
-    apple: "/favicon-180.png",
+    icon: withBasePath("/favicon.png"),
+    apple: withBasePath("/favicon-180.png"),
   },
 };
 

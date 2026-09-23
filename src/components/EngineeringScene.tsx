@@ -21,7 +21,7 @@ const TURF_TEMP_MAX = 77;
 // ground-stack/turf/canopy/post/ball assembly (geometry, colors, materials)
 // exported directly from the reference build, dropped in as a static asset
 // rather than hand-approximated. See public/models/.
-const MODEL_URL = "/models/qourt-hex-macro-zoom.glb";
+const MODEL_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/models/qourt-hex-macro-zoom.glb`;
 
 // The model is authored across a ~9x9 unit footprint (X/Z +-4.5), ~3 units
 // tall. This scale brings it down to roughly the same on-screen footprint

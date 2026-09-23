@@ -10,7 +10,7 @@ import * as THREE from "three";
 // (geometry, colors, materials, and even the part-by-part scatter/settle
 // animation data) exported directly from the reference build, dropped in
 // as a static asset rather than hand-approximated. See public/models/.
-const MODEL_URL = "/models/qourt-hex-padel-court.glb";
+const MODEL_URL = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/models/qourt-hex-padel-court.glb`;
 
 // The model is authored in real-world meters (a 20m x 10m court, 3m walls).
 // This scale brings it down to the same rough on-screen footprint our
