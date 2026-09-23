@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import Reveal from "./Reveal";
-import StaticEngineeringDiagram from "./StaticEngineeringDiagram";
 
 const EngineeringScene = dynamic(() => import("./EngineeringScene"), { ssr: false });
 
@@ -117,11 +116,9 @@ function comfortFor(under: number) {
 export default function Engineering() {
   const [temp, setTemp] = useState(38);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [enabled3D, setEnabled3D] = useState(false);
 
   useEffect(() => {
     setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    setEnabled3D(window.matchMedia("(min-width:901px)").matches);
   }, []);
 
   const reduction = reductionFor(temp);
@@ -171,11 +168,7 @@ export default function Engineering() {
 
         <div className="eng-grid">
           <Reveal className="eng-visual">
-            {enabled3D ? (
-              <EngineeringScene reduceMotion={reduceMotion} turfSurface={turfSurface} />
-            ) : (
-              <StaticEngineeringDiagram />
-            )}
+            <EngineeringScene reduceMotion={reduceMotion} turfSurface={turfSurface} />
             <div className="hud-tag" style={{ top: "40%", left: 20 }}>
               ↳ MONOFILAMENT FIBER &middot; TEXTURIZED
             </div>

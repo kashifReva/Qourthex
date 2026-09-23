@@ -1,13 +1,18 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import PadelBall from "./PadelBall";
 import CourtFloor from "./CourtFloor";
 import * as THREE from "three";
+import { applyResponsiveFov } from "@/lib/responsiveFov";
+
+// The scene (camera position, ball placement) was tuned against a wide
+// desktop canvas around this aspect ratio (roughly 1440x900).
+const BASE_FOV = 32;
+const BASE_ASPECT = 1.6;
 
 function Rig({ reduceMotion }: { reduceMotion: boolean }) {
-  const { camera } = useThree();
   const target = useRef(new THREE.Vector2(0, 0));
 
   useEffect(() => {
@@ -20,11 +25,13 @@ function Rig({ reduceMotion }: { reduceMotion: boolean }) {
     return () => window.removeEventListener("pointermove", onMove);
   }, [reduceMotion]);
 
-  useFrame(() => {
-    if (reduceMotion) return;
-    camera.position.x += (target.current.x * 0.6 - camera.position.x) * 0.02;
-    camera.position.y += (-target.current.y * 0.3 + 0.2 - camera.position.y) * 0.02;
-    camera.lookAt(0, 0, 0);
+  useFrame(({ camera, size }) => {
+    if (!reduceMotion) {
+      camera.position.x += (target.current.x * 0.6 - camera.position.x) * 0.02;
+      camera.position.y += (-target.current.y * 0.3 + 0.2 - camera.position.y) * 0.02;
+      camera.lookAt(0, 0, 0);
+    }
+    applyResponsiveFov(camera, size, BASE_FOV, BASE_ASPECT);
   });
 
   return null;
@@ -32,17 +39,11 @@ function Rig({ reduceMotion }: { reduceMotion: boolean }) {
 
 export default function Hero3DScene() {
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(mq.matches);
-    // Skip the WebGL scene on small screens entirely: saves battery/GPU on
-    // phones and the text-only hero already reads well without it there.
-    setEnabled(window.matchMedia("(min-width:901px)").matches);
   }, []);
-
-  if (!enabled) return null;
 
   return (
     <Canvas

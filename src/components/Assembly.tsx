@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import Reveal from "./Reveal";
-import StaticAssemblyDiagram from "./StaticAssemblyDiagram";
 
 const Assembly3DScene = dynamic(() => import("./Assembly3DScene"), { ssr: false });
 
@@ -39,7 +38,6 @@ export default function Assembly() {
   const progressRef = useRef(0);
   const [stage, setStage] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [enabled3D, setEnabled3D] = useState(false);
 
   useEffect(() => {
     const scrollWrap = scrollWrapRef.current;
@@ -47,14 +45,12 @@ export default function Assembly() {
 
     const reduceMotionMQ = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setReduceMotion(reduceMotionMQ);
-    setEnabled3D(window.matchMedia("(min-width:901px)").matches);
 
-    const isDesktop = () => window.matchMedia("(min-width:901px)").matches;
     let lastStage = -1;
 
     function onAssemblyScroll() {
       if (!scrollWrap) return;
-      if (reduceMotionMQ || !isDesktop()) {
+      if (reduceMotionMQ) {
         progressRef.current = 1;
         if (lastStage !== 3) {
           lastStage = 3;
@@ -118,11 +114,7 @@ export default function Assembly() {
           </div>
 
           <div className="assembly-visual-full" id="assemblyVisual" data-stage={stage}>
-            {enabled3D ? (
-              <Assembly3DScene progressRef={progressRef} reduceMotion={reduceMotion} />
-            ) : (
-              <StaticAssemblyDiagram />
-            )}
+            <Assembly3DScene progressRef={progressRef} reduceMotion={reduceMotion} />
           </div>
 
           <div className="wrap assembly-bottom">

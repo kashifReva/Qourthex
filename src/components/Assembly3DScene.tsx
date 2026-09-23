@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import * as THREE from "three";
+import { applyResponsiveFov } from "@/lib/responsiveFov";
 
 // The real, authored reference model — the exact glass-box padel court
 // (geometry, colors, materials, and even the part-by-part scatter/settle
@@ -266,11 +267,17 @@ function CourtModel({ progressRef }: { progressRef: React.RefObject<number> }) {
 
 useGLTF.preload(MODEL_URL);
 
+// The camera path (position, look-at) was tuned against a wide desktop
+// canvas, roughly this aspect ratio (a full-bleed strip capped at 66vh).
+const BASE_FOV = 34;
+const BASE_ASPECT = 2.2;
+
 function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
-  useFrame(({ camera }) => {
+  useFrame(({ camera, size }) => {
     const p = progressRef.current;
     camera.position.set(lerp(3.6, 2.7, p), lerp(2.5, 1.95, p), lerp(3.9, 3.0, p));
     camera.lookAt(0, 0.22, 0);
+    applyResponsiveFov(camera, size, BASE_FOV, BASE_ASPECT);
   });
   return null;
 }

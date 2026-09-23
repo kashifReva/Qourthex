@@ -1098,28 +1098,29 @@ input[type="range"]::-moz-range-track {
 
 .assembly-scroll {
   position: relative;
-  padding-bottom: 80px;
-}
-@media (min-width: 901px) {
-  .assembly-scroll {
-    height: 320vh;
-    padding-bottom: 0;
-  }
+  height: 320vh;
 }
 .assembly-pin {
-  position: relative;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 48px 0 40px;
 }
-@media (min-width: 901px) {
+@media (max-width: 900px) {
   .assembly-pin {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 28px;
-    padding: 48px 0 40px;
+    /* keep a definite height (not min-height) — the canvas inside relies on
+       flex-grow resolving against a fixed container height to size itself.
+       Content that doesn't fit simply overflows the bottom of the sticky
+       box instead of being centered (and partly hidden above the fold). */
+    justify-content: flex-start;
+    /* clear the fixed 64px header so the stage tag doesn't sit behind it */
+    padding: 84px 0 28px;
+    gap: 16px;
   }
 }
 
@@ -1156,6 +1157,7 @@ input[type="range"]::-moz-range-track {
   width: 100%;
   flex: 1 1 auto;
   min-height: 300px;
+  max-height: 66vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1173,18 +1175,6 @@ input[type="range"]::-moz-range-track {
   max-width: 460px;
   height: auto;
   overflow: visible;
-}
-@media (min-width: 901px) {
-  .assembly-visual-full {
-    max-height: 66vh;
-  }
-}
-@media (max-width: 900px) {
-  .assembly-visual-full {
-    height: 340px;
-    min-height: 340px;
-    flex: none;
-  }
 }
 
 /* everything else — bars + stage copy — sits under the model */
@@ -1283,13 +1273,6 @@ input[type="range"]::-moz-range-track {
 @media (max-width: 900px) {
   .assembly-bottom {
     padding-bottom: 40px;
-  }
-  .assembly-bars {
-    display: none;
-  }
-  .assembly-stage-card {
-    display: block !important;
-    margin-bottom: 0;
   }
 }
 
