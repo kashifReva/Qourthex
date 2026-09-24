@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import PadelRacket from "./PadelRacket";
+import HeroBounceTrail from "./HeroBounceTrail";
 import CourtFloor from "./CourtFloor";
 import * as THREE from "three";
 import { applyResponsiveFov } from "@/lib/responsiveFov";
@@ -39,9 +39,6 @@ function Rig({ reduceMotion }: { reduceMotion: boolean }) {
 
 export default function Hero3DScene() {
   const [reduceMotion, setReduceMotion] = useState(false);
-  // The heading sits much higher in the compact mobile layout than in the
-  // wide desktop one, so the racket needs a different world position to
-  // stay behind it rather than drifting down into the paragraph/CTA area.
   const [isNarrow, setIsNarrow] = useState(false);
 
   useEffect(() => {
@@ -55,8 +52,15 @@ export default function Hero3DScene() {
     return () => narrowMQ.removeEventListener("change", onChange);
   }, []);
 
-  const racketPosition: [number, number, number] = isNarrow ? [0.5, 6, -2.2] : [1.15, 0.05, -2.6];
-  const racketScale = isNarrow ? 0.62 : 0.85;
+  // Centered in the hero as a whole (not tucked to one side), just nudged up
+  // slightly so it reads behind the text block rather than the stats row.
+  // The mobile heading is much narrower (stacked to two lines) than the
+  // wide desktop one, so the arc needs fewer/tighter bounces there too, not
+  // just a smaller scale, or it reads as a flat squiggle instead of bounces.
+  const trailPosition: [number, number, number] = isNarrow ? [0, 5.0, -1.0] : [0, 0.35, -1.2];
+  const trailScale = isNarrow ? 0.85 : 0.95;
+  const trailPathWidth = isNarrow ? 3.1 : 6.4;
+  const trailBounces = isNarrow ? 2.2 : 3.4;
 
   return (
     <Canvas
@@ -71,7 +75,13 @@ export default function Hero3DScene() {
 
       <Suspense fallback={null}>
         <CourtFloor />
-        <PadelRacket position={racketPosition} scale={racketScale} animate={!reduceMotion} />
+        <HeroBounceTrail
+          position={trailPosition}
+          scale={trailScale}
+          pathWidth={trailPathWidth}
+          bounces={trailBounces}
+          animate={!reduceMotion}
+        />
       </Suspense>
 
       <Rig reduceMotion={reduceMotion} />

@@ -26,19 +26,19 @@ export default function Footer() {
             </p>
             <div className="foot-ar mono">QOURT HEX</div>
             <div className="foot-social">
-              <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="instagram">
+              <a href="https://www.instagram.com/qourt.hex/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="instagram">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="5" />
                   <circle cx="12" cy="12" r="4" />
                   <circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none" />
                 </svg>
               </a>
-              <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="facebook">
+              <a href="https://www.facebook.com/people/QourtHex/61594516597609/" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="facebook">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M14 21v-7h2.5l.5-3H14V9c0-.9.3-1.5 1.7-1.5H17V4.8c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4V11H8.5v3H11v7h3z" strokeLinejoin="round" />
                 </svg>
               </a>
-              <a href="https://www.tiktok.com" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="tiktok">
+              <a href="https://www.tiktok.com/@qourthex" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="tiktok">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path
                     d="M13 3v11.2a2.8 2.8 0 11-2.2-2.74M13 3a5.5 5.5 0 004.8 4.6M13 6.2a5.5 5.5 0 004.8 3.4"
@@ -47,13 +47,13 @@ export default function Footer() {
                   />
                 </svg>
               </a>
-              <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="linkedin">
+              <a href="https://www.linkedin.com/company/qourthex/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="linkedin">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <path d="M7.5 10v6.5M7.5 7.2v.1M12 16.5V13a2 2 0 014 0v3.5M12 10v6.5" strokeLinecap="round" />
                 </svg>
               </a>
-              <a href="https://wa.me/97466444291" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="whatsapp">
+              <a href="https://wa.me/97400000000" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="whatsapp">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path
                     d="M20.5 11.6a8.4 8.4 0 01-12.2 7.5L4 20l1-4.1a8.4 8.4 0 1115.5-4.3z"
@@ -105,7 +105,7 @@ export default function Footer() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
                   <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.5 21 3 13.5 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1L6.6 10.8z" />
                 </svg>
-                <a href="tel:+97466444291">+974 6644 4291</a>
+                <a href="tel:+97400000000">+974 0000 0000</a>
               </li>
             </ul>
           </div>
