@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import PadelBall from "./PadelBall";
+import PadelRacket from "./PadelRacket";
 import CourtFloor from "./CourtFloor";
 import * as THREE from "three";
 import { applyResponsiveFov } from "@/lib/responsiveFov";
@@ -58,7 +58,7 @@ export default function Hero3DScene() {
 
       <Suspense fallback={null}>
         <CourtFloor />
-        <PadelBall position={[3.1, -0.35, -1]} scale={0.95} animate={!reduceMotion} />
+        <PadelRacket position={[3.1, 0.15, -1]} scale={0.62} animate={!reduceMotion} />
       </Suspense>
 
       <Rig reduceMotion={reduceMotion} />

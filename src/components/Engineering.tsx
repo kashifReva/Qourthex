@@ -162,7 +162,7 @@ export default function Engineering() {
             <span className="label">The Engineering Layer</span>
           </div>
           <h2>
-            Macro-zoom into the <span className="lime">precision</span> behind the play.
+            Macro-zoom into the <span className="lime">precision</span> behind the play, from turf to canopy.
           </h2>
         </Reveal>
 
