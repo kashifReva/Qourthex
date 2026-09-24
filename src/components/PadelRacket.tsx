@@ -104,8 +104,12 @@ export default function PadelRacket({
     if (!groupRef.current) return;
     if (!animate) return;
     t0.current += delta;
-    groupRef.current.rotation.y += delta * 0.3;
-    groupRef.current.rotation.x = Math.sin(t0.current * 0.4) * 0.12;
+    // Gentle wobble rather than a full spin: a thin paddle face turns nearly
+    // invisible edge-on, so keep it swiveling within a range that always
+    // shows most of the face toward the camera.
+    groupRef.current.rotation.y = -0.45 + Math.sin(t0.current * 0.35) * 0.35;
+    groupRef.current.rotation.x = Math.sin(t0.current * 0.4) * 0.1;
+    groupRef.current.rotation.z = Math.sin(t0.current * 0.25) * 0.06;
     groupRef.current.position.y = position[1] + Math.sin(t0.current * 0.8) * 0.16;
   });
 
@@ -113,13 +117,19 @@ export default function PadelRacket({
     <group ref={groupRef} position={position} scale={scale}>
       {/* Paddle head */}
       <mesh geometry={paddleGeometry} castShadow receiveShadow>
-        <meshStandardMaterial color="#14161b" roughness={0.35} metalness={0.25} />
+        <meshStandardMaterial
+          color="#3a4432"
+          emissive="#2a3d0a"
+          emissiveIntensity={0.35}
+          roughness={0.4}
+          metalness={0.3}
+        />
       </mesh>
 
       {/* Lime edge rim, traced just outside the paddle silhouette */}
       <mesh position={[0, HEAD_CENTER_Y, 0]} castShadow>
-        <torusGeometry args={[HEAD_A - 0.015, 0.026, 12, 64]} />
-        <meshStandardMaterial color="#bbff2e" roughness={0.4} metalness={0.1} />
+        <torusGeometry args={[HEAD_A - 0.015, 0.03, 12, 64]} />
+        <meshStandardMaterial color="#bbff2e" emissive="#bbff2e" emissiveIntensity={0.5} roughness={0.35} metalness={0.1} />
       </mesh>
 
       {/* Throat / neck */}

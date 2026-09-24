@@ -39,11 +39,24 @@ function Rig({ reduceMotion }: { reduceMotion: boolean }) {
 
 export default function Hero3DScene() {
   const [reduceMotion, setReduceMotion] = useState(false);
+  // The heading sits much higher in the compact mobile layout than in the
+  // wide desktop one, so the racket needs a different world position to
+  // stay behind it rather than drifting down into the paragraph/CTA area.
+  const [isNarrow, setIsNarrow] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduceMotion(mq.matches);
+
+    const narrowMQ = window.matchMedia("(max-width: 640px)");
+    setIsNarrow(narrowMQ.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsNarrow(e.matches);
+    narrowMQ.addEventListener("change", onChange);
+    return () => narrowMQ.removeEventListener("change", onChange);
   }, []);
+
+  const racketPosition: [number, number, number] = isNarrow ? [0.5, 6, -2.2] : [1.15, 0.05, -2.6];
+  const racketScale = isNarrow ? 0.62 : 0.85;
 
   return (
     <Canvas
@@ -58,7 +71,7 @@ export default function Hero3DScene() {
 
       <Suspense fallback={null}>
         <CourtFloor />
-        <PadelRacket position={[3.1, 0.15, -1]} scale={0.62} animate={!reduceMotion} />
+        <PadelRacket position={racketPosition} scale={racketScale} animate={!reduceMotion} />
       </Suspense>
 
       <Rig reduceMotion={reduceMotion} />
